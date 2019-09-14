@@ -127,6 +127,15 @@ First, how to get them:
 * Go to [the factorio website](https://www.factorio.com/login) and login to your account.
 * Click your username in top right to go to your profile.
 
+## How to find the correct mod name
+
+In order to use this script, you have to find the correct mod name, not the "friendly" one.
+You can do it directly from mod portal !
+
+Once you find an interesting mod, for example `Bob's Metals, Chemicals and Intermediates`, open the mod portal page, here https://mods.factorio.com/mod/bobplates
+
+The correct mod name to use is the last part of the URL : `bobplates`.
+
 ## License ##
 
 The source of **Factorio Mod Manager** is Copyright 2019 Tristan "Tantriss"
