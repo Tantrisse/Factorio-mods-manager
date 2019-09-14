@@ -1,7 +1,7 @@
 This is a tool for [Factorio](http://www.factorio.com/) headless server management.
-It provides mod installation and update.
+It provides mod management : List / Install / Update / Remove / Enable / Disable.
 
-This package is heavily inspired by [Factorio-mod-updater](https://github.com/astevens/factorio-mod-updater/blob/master/factorio-mod-updater) and [Factorio Updater](https://github.com/narc0tiq/factorio-updater).
+This package is heavily inspired by [Factorio-mod-updater](https://github.com/astevens/factorio-mod-updater/blob/master/factorio-mod-updater) and [Factorio Updater](https://github.com/narc0tiq/factorio-updater) so big think to you for your inspiration !
 
 ## Installation ##
 
@@ -9,8 +9,6 @@ Just clone this repository in any directory. Here, `/opt/factorio-mod-manager` a
 ```bash
 git clone git@github.com:Tantriss/Factorio-mod-manager.git /opt/factorio-mod-manager
 ```
-
-I recommand you to use the same user your Factorio server has been started with, as the mods downloaded by this script will belong to this user.
 
 This script has been tested (only on Debian) with Python 2.7 and 3.5 using a single non-standard library, [Requests](http://requests.readthedocs.org/en/latest/).
 
@@ -29,6 +27,8 @@ Some constant parameters can be put in a config file. These options are :
 * token (Your token, see "Service username and token" below)
 
 An example file can be found in this repo, just copy `config.example.json` to `config.json` and edit values inside.
+
+Keep in mind that any corresponding command line argument will override these in config file.
 
 ## Usage ##
 
