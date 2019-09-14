@@ -23,21 +23,27 @@ def file_path(string):
     else:
         raise Exception(string + " is not a valid path to a file.")
 
-parser = argparse.ArgumentParser(description="Fetches Factorio mods update (from mod_list.json)")
+parser = argparse.ArgumentParser(description="Install and update mods (from mod_list.json) for Factorio")
+
 parser.add_argument('-p', '--mod-list-path', type=file_path, dest='mod_list_path', required=True,
-                    help="Oui.")
+                    help="Path to your mod_list.json file. See README to find it easily.")
+
 parser.add_argument('-u', '--user', dest='username', required=True,
                     help="Your Factorio service username, from player-data.json.")
 parser.add_argument('-t', '--token', dest='token', required=True,
-                    help="Your Factorio service token, also from player-data.json.")
+                    help="Your Factorio service token, from player-data.json.")
+
 parser.add_argument('-d', '--dry-run', action='store_true', dest='dry_run',
                     help="Don't download files, just state which mods updates would be downloaded.")
+
 parser.add_argument('-i', '--install', dest='mod_name_to_install',
-                    help="Install the mod. See README on how to easily get the correct name for the mod.")
+                    help="Install the given mod. See README to find how easily get the correct name for the mod.")
+
+parser.add_argument('-U', '--update', action='store_true', dest='sould_update',
+                    help="Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.")
 parser.add_argument('-e', '--update-enabled-only', action='store_true', dest='enabled_only',
                     help="Will only updates mods 'enabled' in 'mod_list.json'.")
-parser.add_argument('-n', '--no-update', action='store_true', dest='dont_update',
-                    help="Disabled the update process. Usefull if you just want to install a mod and you are sure other mods are up to date.")
+
 parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
                     help="Print URLs and stuff as they happen.")
 
@@ -89,7 +95,7 @@ def get_last_mods_version(mods_list, enabled_only):
 
 
 def update_mods(mods_folder, mods_list, username, token):
-    print('Downloading mods update...')
+    print('Starting mods update...')
 
     for mod in mods_list:
         file_path = os.path.join(mods_folder, mod['last_release']['file_name'])
@@ -103,14 +109,14 @@ def update_mods(mods_folder, mods_list, username, token):
         download_mod(file_path, mod['last_release']['download_url'], username, token)
 
 
-def install_mod(mods_folder, mod_name):
+def install_mod(mods_folder, mod_name, username, token):
     print('Installing mod %s' % (mod_name))
 
     mod = [{
         'name': mod_name,
         'enabled': True
     }]
-    mod_infos = get_last_mods_version(mod)
+    mod_infos = get_last_mods_version(mod, False)
     if len(mod_infos) == 0:
         print('Mod "%s" not found ! Skipping installation.' % (mod_name))
 
@@ -118,8 +124,9 @@ def install_mod(mods_folder, mod_name):
         print('Dry-running, mod not installed.')
         return
 
+    print('Downloading mod %s' % (mod_infos[0]['name']))
     file_path = os.path.join(mods_folder, mod_infos[0]['last_release']['file_name'])
-    download_mod(file_path, mod_infos[0]['last_release']['download_url'])
+    download_mod(file_path, mod_infos[0]['last_release']['download_url'], username, token)
 
 
 def download_mod(file_path, download_url, username, token):
@@ -143,7 +150,7 @@ def download_mod(file_path, download_url, username, token):
                 done = int(50 * dl / total_length)
                 sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )
                 sys.stdout.flush()
-    print('\n')
+    print()
 
 def main():
     args = parser.parse_args()
@@ -152,15 +159,17 @@ def main():
 
     mod_folder_path = os.path.dirname(os.path.abspath(args.mod_list_path))
 
-    if args.dont_update is False:
+    # If there is a mod to install
+    if args.mod_name_to_install:
+        install_mod(mod_folder_path, args.mod_name_to_install, args.username, args.token)
+
+    # If we should update the mods
+    if args.sould_update:
         mods_list = read_mods_list(args.mod_list_path)
 
         mods_list = get_last_mods_version(mods_list, args.enabled_only)
 
         update_mods(mod_folder_path, mods_list, args.username, args.token)
-
-    if args.mod_name_to_install:
-        install_mod(mod_folder_path, args.mod_name_to_install)
 
     print('Finished !')
     return 0
