@@ -2,5 +2,5 @@
     "verbose": false,
     "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",
     "username": "Your Username here. See README",
-    "token": "Your Token here. See README",
+    "token": "Your Token here. See README"
 }
