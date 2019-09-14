@@ -6,8 +6,8 @@ This package is heavily inspired by [Factorio-mod-updater](https://github.com/as
 ## Installation ##
 
 Just clone this repository in any directory. Here, `/opt/factorio-mod-manager` as an example.
-```shell script
-git clone git@github.com:Tantriss/Factorio-mod-manager.git /opt/factorio-mod-manager 
+```bash
+git clone git@github.com:Tantriss/Factorio-mod-manager.git /opt/factorio-mod-manager
 ```
 
 I recommand you to use the same user your Factorio server has been started with, as the mods downloaded by this script will belong to this user.
@@ -19,22 +19,34 @@ install requests` (or, `easy_install requests`). If this
 does not work, you are encouraged to read the linked documentation and try to
 figure out what's gone wrong.
 
+## Configuration ##
+
+Some constant parameters can be put in a config file. These options are :
+
+* verbose (enable verbose mode)
+* factorio_path (path to the root folder of your factorio installation)
+* username (Your username, see "Service username and token" below)
+* token (Your token, see "Service username and token" below)
+
+An example file can be found in this repo, just copy `config.example.json` to `config.json` and edit values inside.
+
 ## Usage ##
 
 From there, it's really simple: go in the folder you where you cloned this repo earlier, and run it (try it with `--help` first!). Here's an example session:
 
-```
-$ python mods_manager.py --help
-usage: mods_manager.py [-h] -p MOD_LIST_PATH -u USERNAME -t TOKEN [-d]
-                       [-i MOD_NAME_TO_INSTALL] [-U] [-e] [-v]
+```bash
+$ python mods_manager.py -h
+usage: mods_manager.py [-h] [-p FACTORIO_PATH] [-u USERNAME] [-t TOKEN] [-d]
+                       [-i MOD_NAME_TO_INSTALL] [-U] [-e] [-l]
+                       [-r REMOVE_MOD_NAME] [-E LIST_ENABLE_MODS]
+                       [-D LIST_DISABLE_MODS] [-v]
 
-Install and update mods (from mod_list.json) for Factorio
+Install / Update / Remove mods for Factorio
 
 optional arguments:
   -h, --help            show this help message and exit
-  -p MOD_LIST_PATH, --mod-list-path MOD_LIST_PATH
-                        Path to your mod_list.json file. See README to find it
-                        easily.
+  -p FACTORIO_PATH, --path-to-factorio FACTORIO_PATH
+                        Path to your factorio folder.
   -u USERNAME, --user USERNAME
                         Your Factorio service username, from player-data.json.
   -t TOKEN, --token TOKEN
@@ -47,24 +59,61 @@ optional arguments:
   -U, --update          Enable the update process. By default, all mods are
                         updated. Seed -e/--update-enabled-only.
   -e, --update-enabled-only
-                        Will only updates mods 'enabled' in 'mod_list.json'.
+                        Will only updates mods 'enabled' in 'mod-list.json'.
+  -l, --list            List installed mods and return. Ignore other switches.
+  -r REMOVE_MOD_NAME, --remove REMOVE_MOD_NAME
+                        Remove specified mod.
+  -E LIST_ENABLE_MODS, --enable-mod LIST_ENABLE_MODS
+                        A mod name to enable. Repeat the flag for each mod you
+                        want to enable.
+  -D LIST_DISABLE_MODS, --disable-mod LIST_DISABLE_MODS
+                        A mod name to disable. Repeat the flag for each mod
+                        you want to disable.
   -v, --verbose         Print URLs and stuff as they happen.
+
 ```
-```shell script
-$ python mods_manager.py -p /opt/factorio/mods/mod-list.json -u ***REMOVED*** -t ***REMOVED*** -i bobpower -U -e -v
-Installing mod bobpower
-Getting mod infos...
-Downloading mod bobpower
-[==================================================]
-Parsing "mod_list.json"...
-Getting mod infos...
-Mod boblogistics is disable and --update-enabled-only has been used. Skipping...
+
+--------
+
+### More complex example :
+
+Here we want to :
+
+* Install "bobvehicleequipment"
+* Enable "bobplates" and "bobgreenhouse" (assuming they are already installed)
+* Disable "IndustrialRevolution" because of incompatiliby issues with bob's mods
+* Finally we update all mods
+
+All this can be done in one command :
+```bash
+$ python mods_manager.py -p /app/projects/factorio/factorio -u YOUR_USE -t YOUR_TOKEN -i bobvehicleequipment -E bobplates -E bobgreenhouse -D IndustrialRevolution -U
+Loading configuration...
+Auto-detected factorio version 0.17 from binary.
+Enabling mod(s) ['bobplates', 'bobgreenhouse']
+Parsing "mod-list.json"...
+Writing to mod-list.json
+
+Disabling mod(s) ['IndustrialRevolution']
+Parsing "mod-list.json"...
+Writing to mod-list.json
+
 Starting mods update...
-Downloading mod IndustrialRevolution
+Parsing "mod-list.json"...
+Getting mod "bobinserters" infos...
+A file already exists at the path "/app/projects/factorio/factorio/mods/bobinserters_0.17.10.zip" and is identical (same SHA1), skipping...
+Getting mod "bobplates" infos...
+Downloading mod bobplates
 [==================================================]
-Downloading mod rso-mod
+
+Installing mod bobvehicleequipment
+Getting mod "bobvehicleequipment" infos...
+Parsing "mod-list.json"...
+Writing to mod-list.json
+Downloading mod bobvehicleequipment
 [==================================================]
+
 Finished !
+
 ```
 
 ## Service username and token ##
@@ -88,9 +137,5 @@ package in the file [LICENSE.md](LICENSE.md).
 
 
 ## TODO ##
-
-- Maybe switch install code just write mod to `mod-list.json` and run update ?
-  - Seems to be a good idea as `mod-list.json` is only refreshed after the second restart of the server...
-- Add mod listing
-- Add mod removing
 - Add crontab example
+- Interactive mod
