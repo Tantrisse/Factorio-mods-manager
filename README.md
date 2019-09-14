@@ -81,7 +81,7 @@ Here we want to :
 
 * Install "bobvehicleequipment"
 * Enable "bobplates" and "bobgreenhouse" (assuming they are already installed)
-* Disable "IndustrialRevolution" because of incompatiliby issues with bob's mods
+* Disable "IndustrialRevolution" because of incompatibility issues with bob's mods
 * Finally we update all mods
 
 All this can be done in one command :
