@@ -86,7 +86,7 @@ Here we want to :
 
 All this can be done in one command :
 ```bash
-$ python mods_manager.py -p /app/projects/factorio/factorio -u YOUR_USE -t YOUR_TOKEN -i bobvehicleequipment -E bobplates -E bobgreenhouse -D IndustrialRevolution -U
+$ python mods_manager.py -p /app/projects/factorio/factorio -u YOUR_USER -t YOUR_TOKEN -i bobvehicleequipment -E bobplates -E bobgreenhouse -D IndustrialRevolution -U
 Loading configuration...
 Auto-detected factorio version 0.17 from binary.
 Enabling mod(s) ['bobplates', 'bobgreenhouse']
