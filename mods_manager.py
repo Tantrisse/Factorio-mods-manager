@@ -22,7 +22,10 @@ glob = {
     'mods_folder_path': None,
     'mods_list_path': None,
     'username': None,
-    'token': None
+    'token': None,
+    'should_reload': False,
+    'service_name': None,
+    'has_to_reload': None
 }
 
 
@@ -41,18 +44,18 @@ def get_file_sha1(file):
 parser = argparse.ArgumentParser(description="Install / Update / Remove mods for Factorio")
 
 parser.add_argument('-p', '--path-to-factorio', dest='factorio_path',
-                    help="Path to your factorio folder.")
+                    help="Path to your Factorio folder.")
 
 parser.add_argument('-u', '--user', dest='username',
-                    help="Your Factorio service username, from player-data.json.")
+                    help="Your Factorio username, from player-data.json.")
 parser.add_argument('-t', '--token', dest='token',
-                    help="Your Factorio service token, from player-data.json.")
+                    help="Your Factorio token, from player-data.json.")
 
 parser.add_argument('-d', '--dry-run', action='store_true', dest='dry_run',
                     help="Don't download files, just state which mods updates would be downloaded.")
 
 parser.add_argument('-i', '--install', dest='mod_name_to_install',
-                    help="Install the given mod. See README to find how easily get the correct name for the mod.")
+                    help="Install the given mod. See README to easily find the correct mod name.")
 
 parser.add_argument('-U', '--update', action='store_true', dest='sould_update',
                     help="Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.")
@@ -65,10 +68,16 @@ parser.add_argument('-l', '--list', action='store_true', dest='list_mods',
 parser.add_argument('-r', '--remove', dest='remove_mod_name',
                     help="Remove specified mod.")
 
-parser.add_argument('-E', '--enable-mod', dest='list_enable_mods', action='append',
+parser.add_argument('-E', '--enable', dest='list_enable_mods', action='append',
                     help="A mod name to enable. Repeat the flag for each mod you want to enable.")
-parser.add_argument('-D', '--disable-mod', dest='list_disable_mods', action='append',
+parser.add_argument('-D', '--disable', dest='list_disable_mods', action='append',
                     help="A mod name to disable. Repeat the flag for each mod you want to disable.")
+
+parser.add_argument('--reload', action='store_true', dest='should_reload',
+                    help="Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.")
+
+parser.add_argument('--service-name', dest='service_name',
+                    help="The service name used to launch Factorio. Do not pass anything if not the case (prevent reloading).")
 
 parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
                     help="Print URLs and stuff as they happen.")
@@ -80,7 +89,7 @@ def find_version():
     source_version = re.search("Version: (\d+\.\d+)\.\d+ \(build \d+", version_output)
     if source_version:
         main_version = source_version.group(1)
-        print("Auto-detected factorio version %s from binary." % (main_version))
+        print("Auto-detected Factorio version %s from binary." % (main_version))
         return main_version
 
 
@@ -177,6 +186,9 @@ def update_mods(enabled_only):
         print('Downloading mod %s' % (mod_infos['name']))
         download_mod(file_path, mod_infos['same_version_releases'][0]['download_url'])
 
+        # Save globaly that a reload of Factorio is needed in the end.
+        glob['has_to_reload'] = True
+
 
 def install_mod(mod_name):
     print('Installing mod %s' % (mod_name))
@@ -204,6 +216,9 @@ def install_mod(mod_name):
     file_path = os.path.join(glob['mods_folder_path'], mod_infos['same_version_releases'][0]['file_name'])
     download_mod(file_path, mod_infos['same_version_releases'][0]['download_url'])
 
+    # Save globaly that a reload of Factorio is needed in the end.
+    glob['has_to_reload'] = True
+
     return True
 
 
@@ -215,8 +230,14 @@ def remove_mod(mod_name):
 
     print('Removing mod "%s"' % (mod['name']))
 
-    mod_infos = get_mod_infos(mod)['releases']
-    for mod in mod_infos:
+    mod_infos = get_mod_infos(mod)
+    if mod_infos is not None and 'releases' in mod_infos:
+        releases = mod_infos['releases']
+    else:
+        print('No releases found for the mod "%s" skipping...' % (mod_name))
+        return False
+
+    for mod in releases:
         file_path = os.path.join(glob['mods_folder_path'], mod['file_name'])
 
         if glob['dry_run']:
@@ -233,7 +254,11 @@ def remove_mod(mod_name):
     for mod in mods_list:
         if mod['name'] not in ['bobinserters']:
             new_mods_list.append(mod)
+
     write_mods_list(new_mods_list)
+
+    # Save globaly that a reload of Factorio is needed in the end.
+    glob['has_to_reload'] = True
 
 
 def download_mod(file_path, download_url):
@@ -277,11 +302,20 @@ def update_state_mods(mods_name_list, should_enable):
 
     write_mods_list(mods_list)
 
+    # Save globaly that a reload of Factorio is needed in the end.
+    glob['has_to_reload'] = True
+
 
 def load_config(args):
     print('Loading configuration...')
     with open(os.path.join(__location__, 'config.json'), 'r') as fd:
         config = json.load(fd)
+
+    glob['should_reload'] = args.should_reload if args.should_reload else (config['should_reload'] if "should_reload" in config else False)
+    glob['service_name'] = args.service_name if args.service_name else (config['service_name'] if "service_name" in config else None)
+    if glob['should_reload'] and (glob['service_name'] is None):
+        parser.error('Reload of Factorio is enabled but no service name was given. Set it in "config.json" or by passing -s argument.')
+        return False
 
     glob['factorio_path'] = os.path.abspath(args.factorio_path) if args.factorio_path else (config['factorio_path'] if "factorio_path" in config else False)
     if glob['factorio_path'] is False:
@@ -349,6 +383,14 @@ def main():
     if args.remove_mod_name:
         remove_mod(args.remove_mod_name)
         print()
+
+    if glob['has_to_reload'] is True:
+        print('The mod configuration changed and Factorio need to be restarted in order to apply the changes.')
+        if glob['should_reload'] is True:
+            print('Reloading service %s' % (glob['service_name']))
+            os.system('systemctl restart %s' % (glob['service_name']))
+        else:
+            print('Automatic reload has been disabled, please restart Factorio by yourself.')
 
     print('Finished !')
     exit(0)

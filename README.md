@@ -22,9 +22,11 @@ figure out what's gone wrong.
 Some constant parameters can be put in a config file. These options are :
 
 * verbose (enable verbose mode)
-* factorio_path (path to the root folder of your factorio installation)
-* username (Your username, see "Service username and token" below)
-* token (Your token, see "Service username and token" below)
+* factorio_path (path to the root folder of your Factorio installation)
+* username (Your username, see [Username and token](#username-and-token))
+* token (Your token, see [Username and token](#username-and-token))
+* should_reload (If the script should try to reload Factorio via systemctl and the service_name parameter)
+* service_name (If Factorio is started via a service and you want to restart it automatically otherwise let "null")
 
 An example file can be found in this repo, just copy `config.example.json` to `config.json` and edit values inside.
 
@@ -46,7 +48,7 @@ Install / Update / Remove mods for Factorio
 optional arguments:
   -h, --help            show this help message and exit
   -p FACTORIO_PATH, --path-to-factorio FACTORIO_PATH
-                        Path to your factorio folder.
+                        Path to your Factorio folder.
   -u USERNAME, --user USERNAME
                         Your Factorio service username, from player-data.json.
   -t TOKEN, --token TOKEN
@@ -88,7 +90,7 @@ All this can be done in one command :
 ```bash
 $ python mods_manager.py -p /app/projects/factorio/factorio -u YOUR_USER -t YOUR_TOKEN -i bobvehicleequipment -E bobplates -E bobgreenhouse -D IndustrialRevolution -U
 Loading configuration...
-Auto-detected factorio version 0.17 from binary.
+Auto-detected Factorio version 0.17 from binary.
 Enabling mod(s) ['bobplates', 'bobgreenhouse']
 Parsing "mod-list.json"...
 Writing to mod-list.json
@@ -116,15 +118,14 @@ Finished !
 
 ```
 
-## Service username and token ##
+## Username and token ##
 
 The keen-eyed will have noticed the options for `--user` and `--token`. These
-allow you to supply a username and token normally used by the Factorio services
-(like the in-game updater and authenticated multiplayer). Having them will
+allow you to supply a username and token normally used by the Factorio (like the in-game updater and authenticated multiplayer). Having them will
 allow you to download the mods from the [Factorio API](https://mods.factorio.com/api/mods).
 
 First, how to get them:
-* Go to [the factorio website](https://www.factorio.com/login) and login to your account.
+* Go to [the Factorio website](https://www.factorio.com/login) and login to your account.
 * Click your username in top right to go to your profile.
 
 ## How to find the correct mod name
