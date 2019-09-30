@@ -149,3 +149,4 @@ package in the file [LICENSE.md](LICENSE.md).
 ## TODO ##
 - Add crontab example
 - Interactive mod
+- Support multiple instances of Factorio
