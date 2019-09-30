@@ -11,6 +11,9 @@ import subprocess
 import re
 from datetime import datetime
 
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
 glob = {
     'verbose': False,
     'dry_run': False,
@@ -72,7 +75,7 @@ parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
 
 
 def find_version():
-    binary_path = glob['factorio_path'] + '/bin/x64/factorio'
+    binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
     version_output = subprocess.check_output([binary_path, "--version"], universal_newlines=True)
     source_version = re.search("Version: (\d+\.\d+)\.\d+ \(build \d+", version_output)
     if source_version:
@@ -277,28 +280,29 @@ def update_state_mods(mods_name_list, should_enable):
 
 def load_config(args):
     print('Loading configuration...')
-    with open('./config.json', 'r') as fd:
+    with open(os.path.join(__location__, 'config.json'), 'r') as fd:
         config = json.load(fd)
 
     glob['factorio_path'] = os.path.abspath(args.factorio_path) if args.factorio_path else (config['factorio_path'] if "factorio_path" in config else False)
+    if glob['factorio_path'] is False:
+        print('Factorio Path not correctly set. Set it in "config.json" or by passing -p argument.')
+        return False
 
-    glob['mods_folder_path'] = glob['factorio_path'] + '/mods'
+    glob['mods_folder_path'] = os.path.join(glob['factorio_path'], 'mods')
     if not os.path.exists(glob['mods_folder_path']) and not os.path.isdir(glob['mods_folder_path']):
         print('Factorio mod folder cannot be found in %s' % (glob['mods_folder_path']))
-        print('Failing miserably...')
-        return
+        return False
 
-    glob['mods_list_path'] = glob['mods_folder_path'] + '/mod-list.json'
+    glob['mods_list_path'] = os.path.join(glob['mods_folder_path'], 'mod-list.json')
     if not os.path.exists(glob['mods_list_path']) and not os.path.isfile(glob['mods_list_path']):
         print('Factorio mod list file cannot be found in %s' % (glob['mods_list_path']))
-        print('Failing miserably...')
-        return
+        return False
 
     glob['username'] = args.username or (config['username'] if "username" in config else "")
     glob['token'] = args.token or (config['token'] if "token" in config else "")
     if glob['username'] == "" or glob['username'] == "":
         print('Username and/or Token not correctly set. Set them in "config.json" or by passing -u / -t arguments. See README on how to obtain them.')
-        return
+        return False
 
     glob['verbose'] = args.verbose or (config['verbose'] if "verbose" in config else False)
     glob['dry_run'] = args.dry_run
@@ -315,6 +319,7 @@ def main():
     args = parser.parse_args()
 
     if not load_config(args):
+        print('Failing miserably...')
         exit(1)
 
     if args.list_enable_mods:
@@ -332,7 +337,6 @@ def main():
 
     # If we should update the mods
     if args.sould_update:
-        # mods_list = get_mods_last_version(read_mods_list(), args.enabled_only)
         update_mods(args.enabled_only)
         print()
 
