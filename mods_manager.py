@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import os
@@ -109,8 +109,24 @@ def write_mods_list(mods_list):
     mods_list_json = {
         "mods": mods_list
     }
+    if glob['dry_run']:
+        print('Dry-running, would have writed this mods list : %s' % mods_list_json)
+        return
+
     with open(glob['mods_list_path'], 'w') as fd:
         json.dump(mods_list_json, fd, indent=4)
+
+
+def remove_file(file_path):
+    if os.path.isfile(file_path):
+        if glob['dry_run']:
+            print('Dry-running, would have deleted this file : %s' % file_path)
+            return
+
+        print('Removing file : %s' % file_path)
+        os.remove(file_path)
+    else:
+        print('Warning : Asked to deleted this file : %s but it doesn\'t exists !' % file_path)
 
 
 def display_mods_list(mods_list):
@@ -172,12 +188,11 @@ def update_mods(enabled_only):
             print('No matching version found for the mod "%s". Skipping...' % (mod['name']))
             continue
 
-        delete_list = [re for re in mod_infos['releases'] if re['file_name'] not in [mod_infos['same_version_releases'][0]['file_name']]]
+        delete_list = [release for release in mod_infos['releases'] if release['file_name'] not in [mod_infos['same_version_releases'][0]['file_name']]]
         for release in delete_list:
             file_path = os.path.join(glob['mods_folder_path'], release['file_name'])
-            if os.path.isfile(file_path):
-                print('Removing old release file : %s' % (file_path))
-                os.remove(file_path)
+            print('Removing old release file : %s' % file_path)
+            remove_file(file_path)
 
         file_path = os.path.join(glob['mods_folder_path'], mod_infos['same_version_releases'][0]['file_name'])
         if check_file_and_sha(file_path, mod_infos['same_version_releases'][0]['sha1']):
@@ -202,11 +217,10 @@ def install_mod(mod_name):
         print('Mod "%s" not found ! Skipping installation.' % (mod_name))
         return
 
-    if not glob['dry_run']:
-        # We add the mod in the 'mod-list.json' file (enabled by default)
-        mods_list = read_mods_list(False)
-        mods_list.append(mod)
-        write_mods_list(mods_list)
+    # We add the mod in the 'mod-list.json' file (enabled by default)
+    mods_list = read_mods_list(False)
+    mods_list.append(mod)
+    write_mods_list(mods_list)
 
     file_path = os.path.join(glob['mods_folder_path'], mod_infos['same_version_releases'][0]['file_name'])
     if check_file_and_sha(file_path, mod_infos['same_version_releases'][0]['sha1']):
@@ -223,30 +237,24 @@ def install_mod(mod_name):
 
 
 def remove_mod(mod_name):
+    print('Removing mod "%s"' % mod_name)
+
     mod = {
         'name': mod_name,
         'enabled': True
     }
 
-    print('Removing mod "%s"' % (mod['name']))
-
     mod_infos = get_mod_infos(mod)
     if mod_infos is not None and 'releases' in mod_infos:
         releases = mod_infos['releases']
     else:
-        print('No releases found for the mod "%s" skipping...' % (mod_name))
+        print('No releases found for the mod "%s" skipping...' % mod_name)
         return False
 
     for mod in releases:
         file_path = os.path.join(glob['mods_folder_path'], mod['file_name'])
-
-        if glob['dry_run']:
-            print('Dry-running, would have removed : %s ' % (file_path))
-            return
-
-        if os.path.isfile(file_path):
-            print('Removing file : %s' % (file_path))
-            os.remove(file_path)
+        print('Removing file : %s' % file_path)
+        remove_file(file_path)
 
     # We remove the mod from the 'mod-list.json' file if found
     mods_list = read_mods_list(False)
@@ -295,6 +303,7 @@ def download_mod(file_path, download_url):
 
 def update_state_mods(mods_name_list, should_enable):
     print('%s mod(s) %s' % ('Enabling' if should_enable else 'Disabling', mods_name_list))
+
     mods_list = read_mods_list(False)
     for mod in mods_list:
         if mod['name'] in mods_name_list:
@@ -356,10 +365,12 @@ def main():
         print('Failing miserably...')
         exit(1)
 
+    # List enabled mods
     if args.list_enable_mods:
         update_state_mods(args.list_enable_mods, True)
         print()
 
+    # List disabled mods
     if args.list_disable_mods:
         update_state_mods(args.list_disable_mods, False)
         print()
@@ -386,6 +397,11 @@ def main():
 
     if glob['has_to_reload'] is True:
         print('The mod configuration changed and Factorio need to be restarted in order to apply the changes.')
+
+        if glob['dry_run']:
+            print('Dry-running, would have%sautomaticaly reloaded' % (" NOT " if glob['should_reload'] is False else ""))
+            return
+
         if glob['should_reload'] is True:
             print('Reloading service %s' % (glob['service_name']))
             os.system('systemctl restart %s' % (glob['service_name']))
