@@ -153,6 +153,9 @@ def get_mod_infos(mod):
     sorted_releases = sorted(r.json()['releases'], key=lambda i: datetime.strptime(i['released_at'], '%Y-%m-%dT%H:%M:%S.%fZ'), reverse=True)
     filtered_releases = [re for re in sorted_releases if re['info_json']['factorio_version'] in [glob['factorio_version']]]
 
+    if 'forced' in mod and mod['forced'] == True:
+        filtered_releases = sorted_releases
+    
     mods_infos = {
         'name': mod['name'],
         'enabled': mod['enabled'],
