@@ -47,30 +47,55 @@ Install / Update / Remove mods for Factorio
 
 optional arguments:
   -h, --help            show this help message and exit
+
   -p FACTORIO_PATH, --path-to-factorio FACTORIO_PATH
                         Path to your Factorio folder.
+
   -u USERNAME, --user USERNAME
-                        Your Factorio service username, from player-data.json.
+                        Your Factorio username, from player-data.json.
+
   -t TOKEN, --token TOKEN
-                        Your Factorio service token, from player-data.json.
+                        Your Factorio token, from player-data.json.
+
   -d, --dry-run         Don't download files, just state which mods updates
                         would be downloaded.
+
   -i MOD_NAME_TO_INSTALL, --install MOD_NAME_TO_INSTALL
-                        Install the given mod. See README to find how easily
-                        get the correct name for the mod.
-  -U, --update          Enable the update process. By default, all mods are
-                        updated. Seed -e/--update-enabled-only.
+                        Install the given mod. See the README on how to find
+                        the correct mod name.
+
+  -U, --update          Enable the update process. By default,
+                        all mods are updated. See -e/--update-enabled-only.
+
   -e, --update-enabled-only
                         Will only updates mods 'enabled' in 'mod-list.json'.
+
   -l, --list            List installed mods and return. Ignore other switches.
+
   -r REMOVE_MOD_NAME, --remove REMOVE_MOD_NAME
                         Remove specified mod.
-  -E LIST_ENABLE_MODS, --enable-mod LIST_ENABLE_MODS
-                        A mod name to enable. Repeat the flag for each mod you
-                        want to enable.
-  -D LIST_DISABLE_MODS, --disable-mod LIST_DISABLE_MODS
-                        A mod name to disable. Repeat the flag for each mod
-                        you want to disable.
+
+  -E LIST_ENABLE_MODS, --enable LIST_ENABLE_MODS
+                        A mod name to enable. Repeat the flag
+                        for each mod you want to enable.
+
+  -D LIST_DISABLE_MODS, --disable LIST_DISABLE_MODS
+                        A mod name to disable. Repeat the flag
+                        for each mod you want to disable.
+
+  --downgrad
+                        If no compatible version is found, install / update to the
+                        last mod version for precedent Factorio version. (ex: If mod has
+                        no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)
+
+  --reload              Enable the restarting of Factorio if any mods
+                        are installed / updated. If set, service-name must be set.
+
+  --service-name SERVICE_NAME
+                        The service name used to launch Factorio.
+                        Do not pass anything if Factorio is not
+                        launched via init / systemd (prevent reloading).
+
   -v, --verbose         Print URLs and stuff as they happen.
 
 ```
@@ -137,6 +162,19 @@ Once you find an interesting mod, for example `Bob's Metals, Chemicals and Inter
 
 The correct mod name to use is the last part of the URL : `bobplates`.
 
+## A note on mod not installing / updating
+
+When Factorio is updated to a newer version, it sometimes don't break / change anything for some mods.
+
+This create a situation where (for exemple) there is no version listed of FNEI for Factorio 1.0.0
+([api response](https://mods.factorio.com/api/mods/FNEI)) because the latest mod version for Factorio 0.18 works fine.
+
+The only way to install this mod when using Factorio 1.0.0 is by using the `--downgrad` flag.
+The script will now install / update the mod using the latest release available for Factorio < 1.0.0 (here Factorio 0.18).
+
+Beware that it don't check if the mod is compatible and should only by used if you're sure that all your mods
+are compatible with your Factorio version.
+
 ## License ##
 
 The source of **Factorio Mod Manager** is Copyright 2019 Tristan "Tantriss"
@@ -149,4 +187,4 @@ package in the file [LICENSE.md](LICENSE.md).
 ## TODO ##
 - Add crontab example
 - Interactive mod
-- Support multiple instances of Factorio
+- ~~Support multiple instances of Factorio (will not do)~~

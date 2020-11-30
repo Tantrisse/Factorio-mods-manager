@@ -10,6 +10,7 @@ import argparse
 import subprocess
 import re
 from datetime import datetime
+from packaging.version import Version, parse
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -25,7 +26,8 @@ glob = {
     'token': None,
     'should_reload': False,
     'service_name': None,
-    'has_to_reload': None
+    'has_to_reload': None,
+    'downgrade_if_no_version': False
 }
 
 
@@ -73,6 +75,10 @@ parser.add_argument('-E', '--enable', dest='list_enable_mods', action='append',
 parser.add_argument('-D', '--disable', dest='list_disable_mods', action='append',
                     help="A mod name to disable. Repeat the flag for each mod you want to disable.")
 
+parser.add_argument('--downgrade', action='store_true', dest='downgrade_if_no_version',
+                    help="If no compatible version is found, install / update the last mod version for precedent Factorio version."
+                         "(ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)")
+
 parser.add_argument('--reload', action='store_true', dest='should_reload',
                     help="Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.")
 
@@ -86,15 +92,15 @@ parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
 def find_version():
     binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
     version_output = subprocess.check_output([binary_path, "--version"], universal_newlines=True)
-    source_version = re.search("Version: (\d+\.\d+)\.\d+ \(build \d+", version_output)
+    source_version = re.search("Version: (\d+\.\d+\.\d+) \(build \d+", version_output)
     if source_version:
         main_version = source_version.group(1)
-        print("Auto-detected Factorio version %s from binary." % (main_version))
+        debug("Auto-detected Factorio version %s from binary." % (main_version))
         return main_version
 
 
 def read_mods_list(remove_base=True):
-    print('Parsing "mod-list.json"...')
+    debug('Parsing "mod-list.json"...')
     with open(glob['mods_list_path'], 'r') as fd:
         mods_list_dict = json.load(fd)['mods']
     # Remove the 'base' mod
@@ -105,7 +111,7 @@ def read_mods_list(remove_base=True):
 
 
 def write_mods_list(mods_list):
-    print('Writing to mod-list.json')
+    debug('Writing to mod-list.json')
     mods_list_json = {
         "mods": mods_list
     }
@@ -123,13 +129,17 @@ def remove_file(file_path):
             print('Dry-running, would have deleted this file : %s' % file_path)
             return
 
-        print('Removing file : %s' % file_path)
+        debug('Removing file : %s' % file_path)
         os.remove(file_path)
     else:
-        print('Warning : Asked to deleted this file : %s but it doesn\'t exists !' % file_path)
+        debug('Warning : Asked to deleted this file : %s but it doesn\'t exists !' % file_path)
 
 
 def display_mods_list(mods_list):
+    if len(mods_list) == 0:
+        print('No mods are installed')
+        return
+
     print('Currently installed mods :')
     for mod in mods_list:
         print("""    Mod name : %s
@@ -138,7 +148,7 @@ def display_mods_list(mods_list):
 
 
 def get_mod_infos(mod):
-    print('Getting mod "%s" infos...' % (mod['name']))
+    debug('Getting mod "%s" infos...' % (mod['name']))
     request_url = 'https://mods.factorio.com/api/mods/' + mod['name']
 
     r = requests.get(request_url)
@@ -147,11 +157,15 @@ def get_mod_infos(mod):
         return
 
     if 'releases' not in r.json() and len(r.json()['releases']) == 0:
-        print('Mod "%s" does not seems to have any release ! Skipping...' % (mod['name']))
+        debug('Mod "%s" does not seems to have any release ! Skipping...' % (mod['name']))
         return
 
     sorted_releases = sorted(r.json()['releases'], key=lambda i: datetime.strptime(i['released_at'], '%Y-%m-%dT%H:%M:%S.%fZ'), reverse=True)
-    filtered_releases = [re for re in sorted_releases if re['info_json']['factorio_version'] in [glob['factorio_version']]]
+
+    if glob['downgrade_if_no_version'] is True:
+        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) < parse(glob['factorio_version'])]
+    else:
+        filtered_releases = [release for release in sorted_releases if release['info_json']['factorio_version'] in [glob['factorio_version']]]
 
     mods_infos = {
         'name': mod['name'],
@@ -173,7 +187,7 @@ def check_file_and_sha(file_path, sha1):
 
 
 def update_mods(enabled_only):
-    print('Starting mods update...')
+    debug('Starting mods update...')
 
     mods_list = read_mods_list()
 
@@ -181,7 +195,7 @@ def update_mods(enabled_only):
         mod_infos = get_mod_infos(mod)
 
         if enabled_only and mod_infos['enabled'] is False:
-            print('Mod %s is disable and --update-enabled-only has been used. Skipping...' % (mod_infos['name']))
+            debug('Mod %s is disable and --update-enabled-only has been used. Skipping...' % (mod_infos['name']))
             continue
 
         if len(mod_infos['same_version_releases']) == 0:
@@ -191,14 +205,14 @@ def update_mods(enabled_only):
         delete_list = [release for release in mod_infos['releases'] if release['file_name'] not in [mod_infos['same_version_releases'][0]['file_name']]]
         for release in delete_list:
             file_path = os.path.join(glob['mods_folder_path'], release['file_name'])
-            print('Removing old release file : %s' % file_path)
+            debug('Removing old release file : %s' % file_path)
             remove_file(file_path)
 
         file_path = os.path.join(glob['mods_folder_path'], mod_infos['same_version_releases'][0]['file_name'])
         if check_file_and_sha(file_path, mod_infos['same_version_releases'][0]['sha1']):
             continue
 
-        print('Downloading mod %s' % (mod_infos['name']))
+        debug('Downloading mod %s' % (mod_infos['name']))
         download_mod(file_path, mod_infos['same_version_releases'][0]['download_url'])
 
         # Save globaly that a reload of Factorio is needed in the end.
@@ -206,7 +220,7 @@ def update_mods(enabled_only):
 
 
 def install_mod(mod_name):
-    print('Installing mod %s' % (mod_name))
+    debug('Installing mod %s' % (mod_name))
 
     mod = {
         'name': mod_name,
@@ -214,7 +228,11 @@ def install_mod(mod_name):
     }
     mod_infos = get_mod_infos(mod)
     if not mod_infos:
-        print('Mod "%s" not found ! Skipping installation.' % (mod_name))
+        debug('Mod "%s" not found ! Skipping installation.' % (mod_name))
+        return
+
+    if len(mod_infos['same_version_releases']) == 0:
+        print('No matching version found for the mod "%s". No mod has been installed !' % (mod['name']))
         return
 
     # We add the mod in the 'mod-list.json' file (enabled by default)
@@ -226,9 +244,15 @@ def install_mod(mod_name):
     if check_file_and_sha(file_path, mod_infos['same_version_releases'][0]['sha1']):
         return
 
-    print('Downloading mod %s' % (mod_infos['name']))
+    debug('Downloading mod %s' % (mod_infos['name']))
     file_path = os.path.join(glob['mods_folder_path'], mod_infos['same_version_releases'][0]['file_name'])
     download_mod(file_path, mod_infos['same_version_releases'][0]['download_url'])
+
+    debug('Installed mod %s version %s for Factorio version %s' % (
+        mod_name,
+        mod_infos['same_version_releases'][0]['version'],
+        mod_infos['same_version_releases'][0]['info_json']['factorio_version']
+    ))
 
     # Save globaly that a reload of Factorio is needed in the end.
     glob['has_to_reload'] = True
@@ -237,7 +261,7 @@ def install_mod(mod_name):
 
 
 def remove_mod(mod_name):
-    print('Removing mod "%s"' % mod_name)
+    debug('Removing mod "%s"' % mod_name)
 
     mod = {
         'name': mod_name,
@@ -248,19 +272,19 @@ def remove_mod(mod_name):
     if mod_infos is not None and 'releases' in mod_infos:
         releases = mod_infos['releases']
     else:
-        print('No releases found for the mod "%s" skipping...' % mod_name)
+        debug('No releases found for the mod "%s" skipping...' % mod_name)
         return False
 
     for mod in releases:
         file_path = os.path.join(glob['mods_folder_path'], mod['file_name'])
-        print('Removing file : %s' % file_path)
+        debug('Removing file : %s' % file_path)
         remove_file(file_path)
 
     # We remove the mod from the 'mod-list.json' file if found
     mods_list = read_mods_list(False)
     new_mods_list = []
     for mod in mods_list:
-        if mod['name'] not in ['bobinserters']:
+        if mod_name != mod['name']:
             new_mods_list.append(mod)
 
     write_mods_list(new_mods_list)
@@ -316,7 +340,7 @@ def update_state_mods(mods_name_list, should_enable):
 
 
 def load_config(args):
-    print('Loading configuration...')
+    debug('Loading configuration...')
     try:
         with open(os.path.join(__location__, 'config.json'), 'r') as fd:
             config = json.load(fd)
@@ -354,8 +378,14 @@ def load_config(args):
     glob['verbose'] = args.verbose or (config['verbose'] if "verbose" in config else False)
     glob['dry_run'] = args.dry_run
     glob['factorio_version'] = find_version()
+    glob['downgrade_if_no_version'] = args.downgrade_if_no_version or (config['downgrade_if_no_version'] if "downgrade_if_no_version" in config else False)
 
     return True
+
+
+def debug(string):
+    if glob['verbose'] is True:
+        print(string)
 
 
 def main():
