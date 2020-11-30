@@ -317,8 +317,12 @@ def update_state_mods(mods_name_list, should_enable):
 
 def load_config(args):
     print('Loading configuration...')
-    with open(os.path.join(__location__, 'config.json'), 'r') as fd:
-        config = json.load(fd)
+    try:
+        with open(os.path.join(__location__, 'config.json'), 'r') as fd:
+            config = json.load(fd)
+    except FileNotFoundError:
+        print("Couldn't load config file, as it didn't exist. Continuing with defaults anyway.")
+        return True
 
     glob['should_reload'] = args.should_reload if args.should_reload else (config['should_reload'] if "should_reload" in config else False)
     glob['service_name'] = args.service_name if args.service_name else (config['service_name'] if "service_name" in config else None)
