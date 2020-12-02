@@ -27,7 +27,7 @@ glob = {
     'should_reload': False,
     'service_name': None,
     'has_to_reload': None,
-    'downgrade_if_no_version': False
+    'should_downgrade': False
 }
 
 
@@ -75,7 +75,7 @@ parser.add_argument('-E', '--enable', dest='list_enable_mods', action='append',
 parser.add_argument('-D', '--disable', dest='list_disable_mods', action='append',
                     help="A mod name to disable. Repeat the flag for each mod you want to disable.")
 
-parser.add_argument('--downgrade', action='store_true', dest='downgrade_if_no_version',
+parser.add_argument('--downgrade', action='store_true', dest='should_downgrade',
                     help="If no compatible version is found, install / update the last mod version for precedent Factorio version."
                          "(ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)")
 
@@ -162,10 +162,10 @@ def get_mod_infos(mod):
 
     sorted_releases = sorted(r.json()['releases'], key=lambda i: datetime.strptime(i['released_at'], '%Y-%m-%dT%H:%M:%S.%fZ'), reverse=True)
 
-    if glob['downgrade_if_no_version'] is True:
-        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) < parse(glob['factorio_version'])]
+    if glob['should_downgrade'] is True:
+        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) <= parse(glob['factorio_version'])]
     else:
-        filtered_releases = [release for release in sorted_releases if release['info_json']['factorio_version'] in [glob['factorio_version']]]
+        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) == parse(glob['factorio_version'])]
 
     mods_infos = {
         'name': mod['name'],
@@ -378,7 +378,7 @@ def load_config(args):
     glob['verbose'] = args.verbose or (config['verbose'] if "verbose" in config else False)
     glob['dry_run'] = args.dry_run
     glob['factorio_version'] = find_version()
-    glob['downgrade_if_no_version'] = args.downgrade_if_no_version or (config['downgrade_if_no_version'] if "downgrade_if_no_version" in config else False)
+    glob['should_downgrade'] = args.should_downgrade or (config['should_downgrade'] if "should_downgrade" in config else False)
 
     return True
 

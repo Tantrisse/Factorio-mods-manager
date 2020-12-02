@@ -4,5 +4,6 @@
     "username": "Your Username here. See README",
     "token": "Your Token here. See README",
     "should_reload": false,
-    "service_name": null
+    "service_name": null,
+    "shoud_downgrade": false
 }
