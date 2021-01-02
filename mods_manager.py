@@ -27,7 +27,8 @@ glob = {
     'should_reload': False,
     'service_name': None,
     'has_to_reload': None,
-    'should_downgrade': False
+    'should_downgrade': False,
+    'semver_matching': False
 }
 
 
@@ -78,6 +79,10 @@ parser.add_argument('-D', '--disable', dest='list_disable_mods', action='append'
 parser.add_argument('--downgrade', action='store_true', dest='should_downgrade',
                     help="If no compatible version is found, install / update the last mod version for precedent Factorio version."
                          "(ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)")
+
+parser.add_argument('--semver', action='store_true', dest='semver_matching',
+                    help="Enable loose semantic major.minor version matching to find compatible mods to install/update."
+                         "(ex: Mods for version 1.1 count as valid for Factorio version 1.1.1)")
 
 parser.add_argument('--reload', action='store_true', dest='should_reload',
                     help="Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.")
@@ -146,6 +151,15 @@ def display_mods_list(mods_list):
     Enabled  : %s
 """ % (mod['name'], mod['enabled']))
 
+def semver_match(modver):
+    factorio_version = parse(glob['factorio_version'])
+    mod_version = parse(modver)
+    debug('Matching factorio version "%s" against mod version "%s"' % (factorio_version, mod_version))
+
+    if factorio_version.major == mod_version.major and factorio_version.minor == mod_version.minor:
+        return True
+    return False
+
 
 def get_mod_infos(mod):
     debug('Getting mod "%s" infos...' % (mod['name']))
@@ -162,7 +176,9 @@ def get_mod_infos(mod):
 
     sorted_releases = sorted(r.json()['releases'], key=lambda i: datetime.strptime(i['released_at'], '%Y-%m-%dT%H:%M:%S.%fZ'), reverse=True)
 
-    if glob['should_downgrade'] is True:
+    if glob['semver_matching'] is True:
+        filtered_releases = [release for release in sorted_releases if semver_match(release['info_json']['factorio_version'])]
+    elif glob['should_downgrade'] is True:
         filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) <= parse(glob['factorio_version'])]
     else:
         filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) == parse(glob['factorio_version'])]
@@ -379,6 +395,7 @@ def load_config(args):
     glob['dry_run'] = args.dry_run
     glob['factorio_version'] = find_version()
     glob['should_downgrade'] = args.should_downgrade or (config['should_downgrade'] if "should_downgrade" in config else False)
+    glob['semver_matching'] = args.semver_matching or (config['semver_matching'] if "semver_matching" in config else False)
 
     return True
 
