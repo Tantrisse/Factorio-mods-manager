@@ -59,7 +59,7 @@ parser.add_argument('-d', '--dry-run', action='store_true', dest='dry_run',
 parser.add_argument('-i', '--install', dest='mod_name_to_install',
                     help="Install the given mod. See README to easily find the correct mod name.")
 
-parser.add_argument('-U', '--update', action='store_true', dest='sould_update',
+parser.add_argument('-U', '--update', action='store_true', dest='should_update',
                     help="Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.")
 parser.add_argument('-e', '--update-enabled-only', action='store_true', dest='enabled_only',
                     help="Will only updates mods 'enabled' in 'mod-list.json'.")
@@ -349,7 +349,7 @@ def load_config(args):
             config = json.load(fd)
     except FileNotFoundError:
         print("Couldn't load config file, as it didn't exist. Continuing with defaults anyway.")
-        return True
+        config = []
 
     glob['should_reload'] = args.should_reload if args.should_reload else (config['should_reload'] if "should_reload" in config else False)
     glob['service_name'] = args.service_name if args.service_name else (config['service_name'] if "service_name" in config else None)
@@ -374,7 +374,9 @@ def load_config(args):
 
     glob['username'] = args.username or (config['username'] if "username" in config else "")
     glob['token'] = args.token or (config['token'] if "token" in config else "")
-    if glob['username'] == "" or glob['username'] == "":
+
+    # If we are not updating OR there is no mod to install, we can safely ignore the username and token as they'll not be used
+    if (args.should_update is not False or args.mod_name_to_install is not None) and (glob['username'] == "" or glob['username'] == ""):
         print('Username and/or Token not correctly set. Set them in "config.json" or by passing -u / -t arguments. See README on how to obtain them.')
         return False
 
@@ -418,7 +420,7 @@ def main():
         exit(0)
 
     # If we should update the mods
-    if args.sould_update:
+    if args.should_update:
         update_mods(args.enabled_only)
         print()
 
