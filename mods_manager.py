@@ -257,7 +257,7 @@ def install_mod(mod_name):
     file_path = os.path.join(glob['mods_folder_path'], mod_infos['same_version_releases'][0]['file_name'])
     download_mod(file_path, mod_infos['same_version_releases'][0]['download_url'])
 
-    debug('Installed mod %s version %s for Factorio version %s' % (
+    print('Installed mod %s version %s for Factorio version %s' % (
         mod_name,
         mod_infos['same_version_releases'][0]['version'],
         mod_infos['same_version_releases'][0]['info_json']['factorio_version']
