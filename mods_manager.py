@@ -88,6 +88,9 @@ parser.add_argument('--service-name', dest='service_name',
 parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
                     help="Print URLs and stuff as they happen.")
 
+parser.add_argument('--disable-mod-manager-update', action='store_true', dest='disable_mod_manager_update',
+                    help="Disable the checking of Factorio-mod-manager updates. "
+                         "Please disable it ONLY if you encounter errors with this feature (eg: you don't have git installed).")
 
 def find_version():
     binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
@@ -396,6 +399,25 @@ def debug(string):
         print(string)
 
 
+def check_mod_manager_update():
+    try:
+        # Update the remote status
+        subprocess.check_output(["git", "remote", "update"])
+        # Get the hash of the last local commit
+        local = subprocess.check_output(["git", "rev-parse", "@{0}"])
+        # Get the hash of the last commit on the remote
+        remote = subprocess.check_output(["git", "rev-parse", "@{u}"])
+
+        if local != remote:
+            print("""
+            ############################################################################
+            An update of Factorio-mod-manager is available, please update via 'git pull'
+            ############################################################################
+            """)
+    except subprocess.CalledProcessError:
+        print("An error occured during the version checking of Factorio-mod-manager, ignoring...")
+
+
 def main():
     if len(sys.argv) == 1:
         parser.print_help()
@@ -406,6 +428,10 @@ def main():
     if not load_config(args):
         print('Failing miserably...')
         exit(1)
+
+    # Check if an update (of Factorio-mod-manager) is available
+    if not args.disable_mod_manager_update:
+        check_mod_manager_update()
 
     # List enabled mods
     if args.list_enable_mods:
