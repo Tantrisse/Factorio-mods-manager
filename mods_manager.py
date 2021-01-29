@@ -239,6 +239,9 @@ def install_mod(mod_name):
         return
 
     # We add the mod in the 'mod-list.json' file (enabled by default)
+    # It may create duplicate to add it here but there's no impact and factorio will clean the
+    # 'mod-list.json' file by itself.
+    # We do it anyway in case the mod file exists but the 'mod-list.json' file is not up to date.
     mods_list = read_mods_list(False)
     mods_list.append(mod)
     write_mods_list(mods_list)
