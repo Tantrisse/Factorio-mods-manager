@@ -92,9 +92,12 @@ parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
 def find_version():
     binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
     version_output = subprocess.check_output([binary_path, "--version"], universal_newlines=True)
-    source_version = re.search("Version: (\d+\.\d+\.\d+) \(build \d+", version_output)
+    # We only capture the MAIN and MAJOR version because from a mod pov the minor version should never be specified
+    # see : https://wiki.factorio.com/Tutorial:Mod_structure#info.json -> "factorio_version"
+    # "Adding a minor version, e.g. "0.18.27" will make the mod portal reject the mod and the game act weirdly"
+    source_version = re.search("Version: (\d+\.\d+)\.\d+ \(build \d+", version_output)
     if source_version:
-        main_version = source_version.group(1)
+        main_version = parse(source_version.group(1))
         debug("Auto-detected Factorio version %s from binary." % (main_version))
         return main_version
 
@@ -163,9 +166,9 @@ def get_mod_infos(mod):
     sorted_releases = sorted(r.json()['releases'], key=lambda i: datetime.strptime(i['released_at'], '%Y-%m-%dT%H:%M:%S.%fZ'), reverse=True)
 
     if glob['should_downgrade'] is True:
-        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) <= parse(glob['factorio_version'])]
+        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) <= glob['factorio_version']]
     else:
-        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) == parse(glob['factorio_version'])]
+        filtered_releases = [release for release in sorted_releases if parse(release['info_json']['factorio_version']) == glob['factorio_version']]
 
     mods_infos = {
         'name': mod['name'],
