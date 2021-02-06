@@ -1,3 +1,5 @@
 **/test/**
 **/.idea/**
 config.json
+/env
+.tool-versions
