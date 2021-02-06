@@ -10,10 +10,16 @@ import argparse
 import subprocess
 import re
 from datetime import datetime
-from packaging.version import Version, parse
+from packaging.version import parse
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+# Fix for python 2 FileNotFoundError
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 glob = {
     'verbose': False,
@@ -32,14 +38,14 @@ glob = {
 
 
 # Global, utility functions
-def get_file_sha1(file):
-    BLOCKSIZE = 65536
+def get_file_sha1(file_name):
+    blocksize = 65536
     hasher = hashlib.sha1()
-    with open(file, 'rb') as afile:
-        buf = afile.read(BLOCKSIZE)
+    with open(file_name, 'rb') as afile:
+        buf = afile.read(blocksize)
         while len(buf) > 0:
             hasher.update(buf)
-            buf = afile.read(BLOCKSIZE)
+            buf = afile.read(blocksize)
     return hasher.hexdigest()
 
 
@@ -70,9 +76,9 @@ parser.add_argument('-l', '--list', action='store_true', dest='list_mods',
 parser.add_argument('-r', '--remove', dest='remove_mod_name',
                     help="Remove specified mod.")
 
-parser.add_argument('-E', '--enable', dest='list_enable_mods', action='append',
+parser.add_argument('-E', '--enable', dest='enable_mods_name', action='append',
                     help="A mod name to enable. Repeat the flag for each mod you want to enable.")
-parser.add_argument('-D', '--disable', dest='list_disable_mods', action='append',
+parser.add_argument('-D', '--disable', dest='disable_mods_name', action='append',
                     help="A mod name to disable. Repeat the flag for each mod you want to disable.")
 
 parser.add_argument('--downgrade', action='store_true', dest='should_downgrade',
@@ -92,6 +98,7 @@ parser.add_argument('--disable-mod-manager-update', action='store_true', dest='d
                     help="Disable the checking of Factorio-mod-manager updates. "
                          "Please disable it ONLY if you encounter errors with this feature (eg: you don't have git installed).")
 
+
 def find_version():
     binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
     version_output = subprocess.check_output([binary_path, "--version"], universal_newlines=True)
@@ -101,7 +108,7 @@ def find_version():
     source_version = re.search("Version: (\d+\.\d+)\.\d+ \(build \d+", version_output)
     if source_version:
         main_version = parse(source_version.group(1))
-        debug("Auto-detected Factorio version %s from binary." % (main_version))
+        debug("Auto-detected Factorio version %s from binary." % main_version)
         return main_version
 
 
@@ -186,7 +193,7 @@ def get_mod_infos(mod):
 def check_file_and_sha(file_path, sha1):
     # We assume that a file with the same name and SHA1 is up to date
     if os.path.exists(file_path) and sha1 == get_file_sha1(file_path):
-        print('A file already exists at the path "%s" and is identical (same SHA1), skipping...' % (file_path))
+        print('A file already exists at the path "%s" and is identical (same SHA1), skipping...' % file_path)
         return True
 
     return False
@@ -226,7 +233,7 @@ def update_mods(enabled_only):
 
 
 def install_mod(mod_name):
-    debug('Installing mod %s' % (mod_name))
+    debug('Installing mod %s' % mod_name)
 
     mod = {
         'name': mod_name,
@@ -234,7 +241,7 @@ def install_mod(mod_name):
     }
     mod_infos = get_mod_infos(mod)
     if not mod_infos:
-        debug('Mod "%s" not found ! Skipping installation.' % (mod_name))
+        debug('Mod "%s" not found ! Skipping installation.' % mod_name)
         return
 
     if len(mod_infos['same_version_releases']) == 0:
@@ -355,7 +362,7 @@ def load_config(args):
             config = json.load(fd)
     except FileNotFoundError:
         print("Couldn't load config file, as it didn't exist. Continuing with defaults anyway.")
-        config = []
+        config = {}
 
     glob['should_reload'] = args.should_reload if args.should_reload else (config['should_reload'] if "should_reload" in config else False)
     glob['service_name'] = args.service_name if args.service_name else (config['service_name'] if "service_name" in config else None)
@@ -434,14 +441,14 @@ def main():
     if not args.disable_mod_manager_update:
         check_mod_manager_update()
 
-    # List enabled mods
-    if args.list_enable_mods:
-        update_state_mods(args.list_enable_mods, True)
+    # Enabled mods
+    if args.enable_mods_name:
+        update_state_mods(args.enable_mods_name, True)
         print()
 
-    # List disabled mods
-    if args.list_disable_mods:
-        update_state_mods(args.list_disable_mods, False)
+    # Disabled mods
+    if args.disable_mods_name:
+        update_state_mods(args.disable_mods_name, False)
         print()
 
     # List installed mods
