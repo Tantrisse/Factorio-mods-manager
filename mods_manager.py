@@ -310,16 +310,17 @@ def install_mod(mod_name, min_mod_version='latest'):
     # Filter the one release we'll use
     target_release = mod_infos['same_version_releases'][0]
 
-    # Check for dependencies
-    dependencies = parse_dependencies(target_release)
+    # Check for dependencies if needed
+    if glob['install_dependencies'] is True:
+        dependencies = parse_dependencies(target_release)
 
-    for required in dependencies['required']:
-        print('Installing dependency "%s" version >= "%s" for "%s"' % (
-            required[0],
-            required[1],
-            mod_name
-        ))
-        install_mod(required[0], required[1])
+        for required in dependencies['required']:
+            print('Installing dependency "%s" version >= "%s" for "%s"' % (
+                required[0],
+                required[1],
+                mod_name
+            ))
+            install_mod(required[0], required[1])
 
     # We add the mod in the 'mod-list.json' file (enabled by default)
     # It may create duplicate to add it here but there's no impact and factorio will clean the
