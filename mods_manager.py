@@ -35,8 +35,9 @@ glob = {
     'service_name': None,
     'has_to_reload': None,
     'should_downgrade': False,
-    'install_required_dependencies': True,
     'disable_mod_manager_update': False,
+    'install_required_dependencies': True,
+    'install_optional_dependencies': False,
     'remove_required_dependencies': False
 }
 
@@ -105,12 +106,14 @@ parser.add_argument('-nmmu', '--no-mod-manager-update', action='store_true', des
 parser.add_argument('-nrd', '--no-required-dependencies', action='store_true', dest='disable_required_dependencies',
                     help="Disable the auto-installation of REQUIRED dependencies.")
 
+parser.add_argument('-iod', '--install-optional-dependencies', action='store_true', dest='install_optional_dependencies',
+                    help="Enable the auto-installation of OPTIONAL dependencies.")
+
 parser.add_argument('-rrd', '--remove-required-dependencies', action='store_true', dest='remove_required_dependencies',
                     help="Enable the removal of all the REQUIRED dependencies of the mod asked to be removed.")
 
-# TODO
-# parser.add_argument('--install-optional-dependencies', action='store_true', dest='enable_optional_dependencies',
-#                     help="Enable the auto-installation of OPTIONAL dependencies.")
+parser.add_argument('-rod', '--remove-optional-dependencies', action='store_true', dest='remove_optional_dependencies',
+                    help="Enable the removal of all the OPTIONAL dependencies of the mod asked to be removed.")
 
 # TODO
 # parser.add_argument('--ignore-conflicts', action='store_true', dest='ignore_conflicts_dependencies',
@@ -295,7 +298,7 @@ def update_mods(enabled_only):
         glob['has_to_reload'] = True
 
 
-def install_mod(mod_name, min_mod_version='latest'):
+def install_mod(mod_name, min_mod_version='latest', install_optional_dependencies=True):
     debug('Installing mod %s' % mod_name)
 
     mod = {
@@ -315,16 +318,31 @@ def install_mod(mod_name, min_mod_version='latest'):
     target_release = mod_infos['same_version_releases'][0]
 
     # Check for dependencies if needed
-    if glob['install_dependencies'] is True:
+    if glob['install_dependencies'] is True or glob['install_optional_dependencies'] is True:
         dependencies = parse_dependencies(target_release)
 
-        for required in dependencies['required']:
-            print('Installing dependency "%s" version >= "%s" for "%s"' % (
-                required[0],
-                required[1],
-                mod_name
-            ))
-            install_mod(required[0], required[1])
+        if glob['install_dependencies'] is True:
+            for required in dependencies['required']:
+                print('Installing dependency "%s" version >= "%s" for "%s"' % (
+                    required[0],
+                    required[1],
+                    mod_name
+                ))
+                # Install the dependency and set the flag for optional dependencies (of the dependency) to False
+                install_mod(required[0], required[1], False)
+
+        # Check for optional dependencies if needed
+        if install_optional_dependencies is True and glob['install_optional_dependencies'] is True:
+            for optional in dependencies['optional']:
+                print('Installing optional dependency "%s" version >= "%s" for "%s"' % (
+                    optional[0],
+                    optional[1],
+                    mod_name
+                ))
+                # Install the dependency but NOT it's own optional dependencies
+                # They should be installed by doing 'mod_manager.py -i $mod_name$ -iod'
+                # where $mod_name$ is name of the optional dependency
+                install_mod(optional[0], optional[1], False)
 
     # We add the mod in the 'mod-list.json' file (enabled by default)
     # It may create duplicate to add it here but there's no impact and factorio will clean the
@@ -356,7 +374,7 @@ def install_mod(mod_name, min_mod_version='latest'):
     return True
 
 
-def remove_mod(mod_name):
+def remove_mod(mod_name, remove_optional_dependencies=True):
     debug('Removing mod "%s"' % mod_name)
 
     mod = {
@@ -369,15 +387,29 @@ def remove_mod(mod_name):
     # Filter the one release we'll use
     target_release = mod_infos['same_version_releases'][0]
 
-    if glob['remove_required_dependencies'] is True:
+    if glob['remove_required_dependencies'] is True or glob['remove_optional_dependencies'] is True:
         dependencies = parse_dependencies(target_release)
 
-        for required in dependencies['required']:
-            print('Removing mod "%s" being a required dependency of "%s"' % (
-                required[0],
-                mod_name
-            ))
-            remove_mod(required[0])
+        if glob['remove_required_dependencies'] is True:
+            for required in dependencies['required']:
+                print('Removing mod "%s" being a required dependency of "%s"' % (
+                    required[0],
+                    mod_name
+                ))
+                # Remove the dependency but NOT it's own optional dependencies.
+                remove_mod(required[0], False)
+
+        # Check for optional dependencies if needed
+        if remove_optional_dependencies is True and glob['remove_optional_dependencies'] is True:
+            for optional in dependencies['optional']:
+                print('Removing mod "%s" being a required dependency of "%s"' % (
+                    optional[0],
+                    mod_name
+                ))
+                # Remove the dependency but NOT it's own optional dependencies.
+                # They should be removed by doing 'mod_manager.py -d $mod_name$ -rod'
+                # where $mod_name$ is name of the optional dependency
+                remove_mod(optional[0], False)
 
     if mod_infos is not None and 'releases' in mod_infos:
         releases = mod_infos['releases']
@@ -496,9 +528,13 @@ def load_config(args):
     # Dependencies
     glob['install_dependencies'] = False if args.disable_required_dependencies is True \
         else (config['install_required_dependencies'] if "install_required_dependencies" in config else True)
+    glob['install_optional_dependencies'] = True if args.install_optional_dependencies is True \
+        else (config['install_optional_dependencies'] if "install_optional_dependencies" in config else False)
 
     glob['remove_required_dependencies'] = True if args.remove_required_dependencies is True \
         else (config['remove_required_dependencies'] if "remove_required_dependencies" in config else False)
+    glob['remove_optional_dependencies'] = True if args.remove_optional_dependencies is True \
+        else (config['remove_optional_dependencies'] if "remove_optional_dependencies" in config else False)
 
     return True
 
