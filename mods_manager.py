@@ -38,7 +38,9 @@ glob = {
     'disable_mod_manager_update': False,
     'install_required_dependencies': True,
     'install_optional_dependencies': False,
-    'remove_required_dependencies': False
+    'remove_required_dependencies': False,
+    'remove_optional_dependencies': False,
+    'ignore_conflicts_dependencies': False
 }
 
 
@@ -115,9 +117,8 @@ parser.add_argument('-rrd', '--remove-required-dependencies', action='store_true
 parser.add_argument('-rod', '--remove-optional-dependencies', action='store_true', dest='remove_optional_dependencies',
                     help="Enable the removal of all the OPTIONAL dependencies of the mod asked to be removed.")
 
-# TODO
-# parser.add_argument('--ignore-conflicts', action='store_true', dest='ignore_conflicts_dependencies',
-#                     help="Ignore any conflicts between mods.")
+parser.add_argument('-icd', '--ignore-conflicts-dependencies', action='store_true', dest='ignore_conflicts_dependencies',
+                    help="Ignore any conflicts between mods.")
 
 
 def find_version():
@@ -252,8 +253,15 @@ def parse_dependencies(release):
     return dependencies
 
 
-# TODO Check for conflict with installed mods
-# def check_for_conflict
+def mod_has_conflicts(conflict_list):
+    # For each mod already installed
+    for mod in read_mods_list():
+        # We check if this mod is not in the conflict list of the
+        # mod we currently try to install
+        if mod['name'] in conflict_list:
+            return mod['name']
+
+    return False
 
 
 def check_file_and_sha(file_path, sha1):
@@ -318,9 +326,19 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
     target_release = mod_infos['same_version_releases'][0]
 
     # Check for dependencies if needed
-    if glob['install_dependencies'] is True or glob['install_optional_dependencies'] is True:
-        dependencies = parse_dependencies(target_release)
+    dependencies = parse_dependencies(target_release)
+    # Check for conflicts
+    conflict = mod_has_conflicts(dependencies['conflict'])
+    if conflict is not False:
+        print('Mod "%s" has a conflict with the mod "%s" already installed' % (mod_name, conflict))
+        if glob['ignore_conflicts_dependencies'] is True:
+            print('Ignoring...')
+        else:
+            print('Stopping here !')
+            exit(0)
 
+    # Install required / optional dependencies
+    if glob['install_dependencies'] is True or glob['install_optional_dependencies'] is True:
         if glob['install_dependencies'] is True:
             for required in dependencies['required']:
                 print('Installing dependency "%s" version >= "%s" for "%s"' % (
@@ -535,6 +553,9 @@ def load_config(args):
         else (config['remove_required_dependencies'] if "remove_required_dependencies" in config else False)
     glob['remove_optional_dependencies'] = True if args.remove_optional_dependencies is True \
         else (config['remove_optional_dependencies'] if "remove_optional_dependencies" in config else False)
+
+    glob['ignore_conflicts_dependencies'] = True if args.ignore_conflicts_dependencies is True \
+        else (config['ignore_conflicts_dependencies'] if "ignore_conflicts_dependencies" in config else False)
 
     return True
 
