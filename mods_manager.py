@@ -401,12 +401,13 @@ def debug(string):
 
 def check_mod_manager_update():
     try:
+        cwd = os.path.dirname(os.path.abspath(__file__))
         # Update the remote status
-        subprocess.check_output(["git", "remote", "update"])
+        subprocess.check_output(["git", "remote", "update"], cwd=cwd)
         # Get the hash of the last local commit
-        local = subprocess.check_output(["git", "rev-parse", "@{0}"])
+        local = subprocess.check_output(["git", "rev-parse", "@{0}"], cwd=cwd)
         # Get the hash of the last commit on the remote
-        remote = subprocess.check_output(["git", "rev-parse", "@{u}"])
+        remote = subprocess.check_output(["git", "rev-parse", "@{u}"], cwd=cwd)
 
         if local != remote:
             print("""
