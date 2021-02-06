@@ -36,7 +36,8 @@ glob = {
     'has_to_reload': None,
     'should_downgrade': False,
     'install_required_dependencies': True,
-    'disable_mod_manager_update': False
+    'disable_mod_manager_update': False,
+    'remove_required_dependencies': False
 }
 
 
@@ -103,6 +104,9 @@ parser.add_argument('-nmmu', '--no-mod-manager-update', action='store_true', des
 
 parser.add_argument('-nrd', '--no-required-dependencies', action='store_true', dest='disable_required_dependencies',
                     help="Disable the auto-installation of REQUIRED dependencies.")
+
+parser.add_argument('-rrd', '--remove-required-dependencies', action='store_true', dest='remove_required_dependencies',
+                    help="Enable the removal of all the REQUIRED dependencies of the mod asked to be removed.")
 
 # TODO
 # parser.add_argument('--install-optional-dependencies', action='store_true', dest='enable_optional_dependencies',
@@ -361,6 +365,20 @@ def remove_mod(mod_name):
     }
 
     mod_infos = get_mod_infos(mod)
+
+    # Filter the one release we'll use
+    target_release = mod_infos['same_version_releases'][0]
+
+    if glob['remove_required_dependencies'] is True:
+        dependencies = parse_dependencies(target_release)
+
+        for required in dependencies['required']:
+            print('Removing mod "%s" being a required dependency of "%s"' % (
+                required[0],
+                mod_name
+            ))
+            remove_mod(required[0])
+
     if mod_infos is not None and 'releases' in mod_infos:
         releases = mod_infos['releases']
     else:
@@ -468,12 +486,19 @@ def load_config(args):
         print('Username and/or Token not correctly set. Set them in "config.json" or by passing -u / -t arguments. See README on how to obtain them.')
         return False
 
-    glob['disable_mod_manager_update'] = True if args.disable_mod_manager_update is True else (config['disable_mod_manager_update'] if "disable_mod_manager_update" in config else False)
+    glob['disable_mod_manager_update'] = True if args.disable_mod_manager_update is True \
+        else (config['disable_mod_manager_update'] if "disable_mod_manager_update" in config else False)
     glob['verbose'] = args.verbose or (config['verbose'] if "verbose" in config else False)
     glob['dry_run'] = args.dry_run
     glob['factorio_version'] = find_version()
     glob['should_downgrade'] = args.should_downgrade or (config['should_downgrade'] if "should_downgrade" in config else False)
-    glob['install_dependencies'] = False if args.disable_required_dependencies is True else (config['install_required_dependencies'] if "install_required_dependencies" in config else True)
+
+    # Dependencies
+    glob['install_dependencies'] = False if args.disable_required_dependencies is True \
+        else (config['install_required_dependencies'] if "install_required_dependencies" in config else True)
+
+    glob['remove_required_dependencies'] = True if args.remove_required_dependencies is True \
+        else (config['remove_required_dependencies'] if "remove_required_dependencies" in config else False)
 
     return True
 
