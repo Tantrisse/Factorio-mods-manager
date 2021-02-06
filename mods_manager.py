@@ -302,7 +302,7 @@ def install_mod(mod_name, min_mod_version='latest'):
         'name': mod_name,
         'enabled': True
     }
-    mod_infos = get_mod_infos(mod)
+    mod_infos = get_mod_infos(mod, min_mod_version)
     if not mod_infos:
         debug('Mod "%s" not found ! Skipping installation.' % mod_name)
         return
