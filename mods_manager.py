@@ -475,7 +475,7 @@ def main():
         print('The mod configuration changed and Factorio need to be restarted in order to apply the changes.')
 
         if glob['dry_run']:
-            print('Dry-running, would have%sautomaticaly reloaded' % (" NOT " if glob['should_reload'] is False else ""))
+            print('Dry-running, would have%s automaticaly reloaded' % (" NOT" if glob['should_reload'] is False else ""))
             return
 
         if glob['should_reload'] is True:

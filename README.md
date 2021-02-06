@@ -5,17 +5,24 @@ This package is heavily inspired by [Factorio-mod-updater](https://github.com/as
 
 ## Installation ##
 
-Just clone this repository in any directory. Here, `/opt/factorio-mod-manager` as an example.
-```bash
+This script has been tested (only on Debian) with Python 2.7 and 3.9 using a single non-standard library, [Requests](http://requests.readthedocs.org/en/latest/).
+
+1. Clone this repository in any directory. Here, `/opt/factorio-mod-manager` as an example.
+```shell script
 git clone git@github.com:Tantriss/Factorio-mod-manager.git /opt/factorio-mod-manager
 ```
 
-This script has been tested (only on Debian) with Python 2.7 and 3.5 using a single non-standard library, [Requests](http://requests.readthedocs.org/en/latest/).
+2. Install the required dependency by running 
 
-To install the required dependency, you should need do no more than run `pip
-install requests` (or, `easy_install requests`). If this
-does not work, you are encouraged to read the linked documentation and try to
-figure out what's gone wrong.
+```shell script
+pip install -r requirements.txt
+```
+
+If you can only use `easy_install` and not `pip`, try doing 
+
+```shell script
+easy_install `cat requirements.txt`
+```
 
 ## Configuration ##
 
@@ -187,4 +194,6 @@ package in the file [LICENSE.md](LICENSE.md).
 ## TODO ##
 - Add crontab example
 - Interactive mod
+- Handle dependencies
+- Handle conflicts
 - ~~Support multiple instances of Factorio (will not do)~~
