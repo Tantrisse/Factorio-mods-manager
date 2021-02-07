@@ -575,23 +575,26 @@ def debug(string):
 
 
 def check_mod_manager_update():
+    debug('Checking for updates...')
+    # Python 2 compatibility to silence the call
     try:
-        cwd = os.path.dirname(os.path.abspath(__file__))
-        # Update the remote status
-        subprocess.check_output(["git", "remote", "update"], cwd=cwd)
-        # Get the hash of the last local commit
-        local = subprocess.check_output(["git", "rev-parse", "@{0}"], cwd=cwd)
-        # Get the hash of the last commit on the remote
-        remote = subprocess.check_output(["git", "rev-parse", "@{u}"], cwd=cwd)
+        with open(os.devnull, 'wb') as shutup:
+            return_code = subprocess.call(["git", "pull", "--quiet", "--ff-only"], cwd=__location__, stdout=shutup, stderr=shutup)
 
-        if local != remote:
+        if return_code != 0:
             print("""
-            ############################################################################
-            An update of Factorio-mod-manager is available, please update via 'git pull'
-            ############################################################################
+            ###############################################################################################
+            An update of Factorio-mod-manager is available but cannot be applied via git-pull ! Ignoring...
+            ###############################################################################################
             """)
-    except subprocess.CalledProcessError:
-        print("An error occured during the version checking of Factorio-mod-manager, ignoring...")
+        else:
+            print("""
+            ################################################################################################
+            An update of Factorio-mod-manager has been applied ! Stopping now, please your command run-again
+            ################################################################################################
+            """)
+    except FileNotFoundError:
+        debug('Cannot find "git" excecutable, skipping...')
 
 
 def main():
