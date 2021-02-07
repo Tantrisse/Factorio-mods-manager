@@ -22,6 +22,7 @@ except NameError:
     # noinspection PyShadowingBuiltins
     FileNotFoundError = IOError
 
+# Global parameters with default values
 glob = {
     'verbose': False,
     'dry_run': False,
@@ -95,7 +96,7 @@ parser.add_argument('--downgrade', action='store_true', dest='should_downgrade',
 parser.add_argument('--reload', action='store_true', dest='should_reload',
                     help="Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.")
 
-parser.add_argument('--service-name', dest='service_name',
+parser.add_argument('-s', '--service-name', dest='service_name',
                     help="The service name used to launch Factorio. Do not pass anything if not the case (prevent reloading).")
 
 parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
@@ -338,8 +339,8 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
             exit(0)
 
     # Install required / optional dependencies
-    if glob['install_dependencies'] is True or glob['install_optional_dependencies'] is True:
-        if glob['install_dependencies'] is True:
+    if glob['install_required_dependencies'] is True or glob['install_optional_dependencies'] is True:
+        if glob['install_required_dependencies'] is True:
             for required in dependencies['required']:
                 print('Installing dependency "%s" version >= "%s" for "%s"' % (
                     required[0],
@@ -393,7 +394,7 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
 
 
 def remove_mod(mod_name, remove_optional_dependencies=True):
-    debug('Removing mod "%s"' % mod_name)
+    print('Removing mod "%s"' % mod_name)
 
     mod = {
         'name': mod_name,
@@ -431,13 +432,12 @@ def remove_mod(mod_name, remove_optional_dependencies=True):
 
     if mod_infos is not None and 'releases' in mod_infos:
         releases = mod_infos['releases']
+        for mod in releases:
+            file_path = os.path.join(glob['mods_folder_path'], mod['file_name'])
+            remove_file(file_path)
     else:
         debug('No releases found for the mod "%s" skipping...' % mod_name)
         return False
-
-    for mod in releases:
-        file_path = os.path.join(glob['mods_folder_path'], mod['file_name'])
-        remove_file(file_path)
 
     # We remove the mod from the 'mod-list.json' file if found
     mods_list = read_mods_list(False)
@@ -507,16 +507,20 @@ def load_config(args):
         print("Couldn't load config file, as it didn't exist. Continuing with defaults anyway.")
         config = {}
 
-    glob['should_reload'] = args.should_reload if args.should_reload else (config['should_reload'] if "should_reload" in config else False)
-    glob['service_name'] = args.service_name if args.service_name else (config['service_name'] if "service_name" in config else None)
-    if glob['should_reload'] and (glob['service_name'] is None):
-        parser.error('Reload of Factorio is enabled but no service name was given. Set it in "config.json" or by passing -s argument.')
-        return False
+    # Service related
+    glob['should_reload'] = args.should_reload if args.should_reload is True \
+        else (config['should_reload'] if "should_reload" in config else glob['should_reload'])
+    glob['service_name'] = args.service_name if args.service_name is not None \
+        else (config['service_name'] if "service_name" in config else glob['service_name'])
 
-    glob['factorio_path'] = os.path.abspath(args.factorio_path) if args.factorio_path else (config['factorio_path'] if "factorio_path" in config else False)
-    if glob['factorio_path'] is False:
-        print('Factorio Path not correctly set. Set it in "config.json" or by passing -p argument.')
-        return False
+    if glob['should_reload'] is True and glob['service_name'] is None:
+        parser.error('Reload of Factorio is enabled but no service name was given. Set it in "config.json" or by passing -s argument.')
+
+    # Path related
+    glob['factorio_path'] = os.path.abspath(args.factorio_path) if args.factorio_path is not None \
+        else (config['factorio_path'] if "factorio_path" in config else glob['factorio_path'])
+    if glob['factorio_path'] is None:
+        parser.error('Factorio Path not correctly set. Set it in "config.json" or by passing -p argument.')
 
     glob['mods_folder_path'] = os.path.join(glob['factorio_path'], 'mods')
     if not os.path.exists(glob['mods_folder_path']) and not os.path.isdir(glob['mods_folder_path']):
@@ -528,34 +532,39 @@ def load_config(args):
         print('Factorio mod list file cannot be found in %s' % (glob['mods_list_path']))
         return False
 
-    glob['username'] = args.username or (config['username'] if "username" in config else "")
-    glob['token'] = args.token or (config['token'] if "token" in config else "")
+    # User credential related
+    glob['username'] = args.username if args.username is not None \
+        else (config['username'] if "username" in config else glob['username'])
+    glob['token'] = args.token if args.token is not None \
+        else (config['token'] if "token" in config else glob['token'])
 
-    # If we are not updating OR there is no mod to install, we can safely ignore the username and token as they'll not be used
-    if (args.should_update is not False or args.mod_name_to_install is not None) and (glob['username'] == "" or glob['username'] == ""):
-        print('Username and/or Token not correctly set. Set them in "config.json" or by passing -u / -t arguments. See README on how to obtain them.')
-        return False
+    # If we are updating OR there is a mod to install, we ensure that the username and token are set
+    if (args.should_update is True or args.mod_name_to_install is not None) and (glob['username'] is None or glob['username'] is None):
+        parser.error('Username and/or Token not correctly set. Set them in "config.json" or by passing -u / -t arguments. See README on how to obtain them.')
 
+    # Script configuration related
     glob['disable_mod_manager_update'] = True if args.disable_mod_manager_update is True \
-        else (config['disable_mod_manager_update'] if "disable_mod_manager_update" in config else False)
-    glob['verbose'] = args.verbose or (config['verbose'] if "verbose" in config else False)
-    glob['dry_run'] = args.dry_run
+        else (config['disable_mod_manager_update'] if "disable_mod_manager_update" in config else glob['disable_mod_manager_update'])
+    glob['verbose'] = args.verbose if args.verbose is not None \
+        else (config['verbose'] if "verbose" in config else glob['verbose'])
+    glob['dry_run'] = args.dry_run if args.dry_run is not None else glob['dry_run']
     glob['factorio_version'] = find_version()
-    glob['should_downgrade'] = args.should_downgrade or (config['should_downgrade'] if "should_downgrade" in config else False)
+    glob['should_downgrade'] = args.should_downgrade if args.should_downgrade is not None \
+        else (config['should_downgrade'] if "should_downgrade" in config else glob['should_downgrade'])
 
-    # Dependencies
-    glob['install_dependencies'] = False if args.disable_required_dependencies is True \
-        else (config['install_required_dependencies'] if "install_required_dependencies" in config else True)
+    # Dependencies related
+    glob['install_required_dependencies'] = False if args.disable_required_dependencies is True \
+        else (config['install_required_dependencies'] if "install_required_dependencies" in config else glob['install_required_dependencies'])
     glob['install_optional_dependencies'] = True if args.install_optional_dependencies is True \
-        else (config['install_optional_dependencies'] if "install_optional_dependencies" in config else False)
+        else (config['install_optional_dependencies'] if "install_optional_dependencies" in config else glob['install_optional_dependencies'])
 
     glob['remove_required_dependencies'] = True if args.remove_required_dependencies is True \
-        else (config['remove_required_dependencies'] if "remove_required_dependencies" in config else False)
+        else (config['remove_required_dependencies'] if "remove_required_dependencies" in config else glob['remove_required_dependencies'])
     glob['remove_optional_dependencies'] = True if args.remove_optional_dependencies is True \
-        else (config['remove_optional_dependencies'] if "remove_optional_dependencies" in config else False)
+        else (config['remove_optional_dependencies'] if "remove_optional_dependencies" in config else glob['remove_optional_dependencies'])
 
     glob['ignore_conflicts_dependencies'] = True if args.ignore_conflicts_dependencies is True \
-        else (config['ignore_conflicts_dependencies'] if "ignore_conflicts_dependencies" in config else False)
+        else (config['ignore_conflicts_dependencies'] if "ignore_conflicts_dependencies" in config else glob['ignore_conflicts_dependencies'])
 
     return True
 
