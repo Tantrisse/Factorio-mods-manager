@@ -1,9 +1,14 @@
 {
     "verbose": false,
-    "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",
+    "disable_mod_manager_update": false,
+    "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",,
     "username": "Your Username here. See README",
     "token": "Your Token here. See README",
+    "should_downgrade": false,
+    "install_required_dependencies": true,
+    "install_optional_dependencies": false,
+    "remove_required_dependencies": true,
+    "ignore_conflicts_dependencies": false,
     "should_reload": false,
-    "service_name": null,
-    "shoud_downgrade": false
+    "service_name": "The name of the service used to start Factorio"
 }

@@ -39,7 +39,7 @@ glob = {
     'disable_mod_manager_update': False,
     'install_required_dependencies': True,
     'install_optional_dependencies': False,
-    'remove_required_dependencies': False,
+    'remove_required_dependencies': True,
     'remove_optional_dependencies': False,
     'ignore_conflicts_dependencies': False
 }
@@ -57,7 +57,7 @@ def get_file_sha1(file_name):
     return hasher.hexdigest()
 
 
-parser = argparse.ArgumentParser(description="Install / Update / Remove mods for Factorio")
+parser = argparse.ArgumentParser(description="Install / Update / Remove mods for Factorio", formatter_class=argparse.RawTextHelpFormatter)
 
 parser.add_argument('-p', '--path-to-factorio', dest='factorio_path',
                     help="Path to your Factorio folder.")
@@ -90,7 +90,7 @@ parser.add_argument('-D', '--disable', dest='disable_mods_name', action='append'
                     help="A mod name to disable. Repeat the flag for each mod you want to disable.")
 
 parser.add_argument('--downgrade', action='store_true', dest='should_downgrade',
-                    help="If no compatible version is found, install / update the last mod version for precedent Factorio version."
+                    help="If no compatible version is found, install / update the last mod version for precedent Factorio version.\n"
                          "(ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)")
 
 parser.add_argument('--reload', action='store_true', dest='should_reload',
@@ -112,7 +112,7 @@ parser.add_argument('-nrd', '--no-required-dependencies', action='store_true', d
 parser.add_argument('-iod', '--install-optional-dependencies', action='store_true', dest='install_optional_dependencies',
                     help="Enable the auto-installation of OPTIONAL dependencies.")
 
-parser.add_argument('-rrd', '--remove-required-dependencies', action='store_true', dest='remove_required_dependencies',
+parser.add_argument('-nrrd', '--no-remove-required-dependencies', action='store_false', dest='remove_required_dependencies',
                     help="Enable the removal of all the REQUIRED dependencies of the mod asked to be removed.")
 
 parser.add_argument('-rod', '--remove-optional-dependencies', action='store_true', dest='remove_optional_dependencies',
@@ -558,7 +558,7 @@ def load_config(args):
     glob['install_optional_dependencies'] = True if args.install_optional_dependencies is True \
         else (config['install_optional_dependencies'] if "install_optional_dependencies" in config else glob['install_optional_dependencies'])
 
-    glob['remove_required_dependencies'] = True if args.remove_required_dependencies is True \
+    glob['remove_required_dependencies'] = False if args.remove_required_dependencies is False \
         else (config['remove_required_dependencies'] if "remove_required_dependencies" in config else glob['remove_required_dependencies'])
     glob['remove_optional_dependencies'] = True if args.remove_optional_dependencies is True \
         else (config['remove_optional_dependencies'] if "remove_optional_dependencies" in config else glob['remove_optional_dependencies'])
@@ -586,12 +586,6 @@ def check_mod_manager_update():
             ###############################################################################################
             An update of Factorio-mod-manager is available but cannot be applied via git-pull ! Ignoring...
             ###############################################################################################
-            """)
-        else:
-            print("""
-            ################################################################################################
-            An update of Factorio-mod-manager has been applied ! Stopping now, please your command run-again
-            ################################################################################################
             """)
     except FileNotFoundError:
         debug('Cannot find "git" excecutable, skipping...')
