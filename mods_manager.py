@@ -36,7 +36,7 @@ glob = {
     'service_name': None,
     'has_to_reload': None,
     'should_downgrade': False,
-    'disable_mod_manager_update': False,
+    'disable_mod_manager_update': True,
     'install_required_dependencies': True,
     'install_optional_dependencies': False,
     'remove_required_dependencies': True,
