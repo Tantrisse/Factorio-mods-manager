@@ -13,8 +13,9 @@ import copy
 from datetime import datetime
 from packaging.version import parse
 
-__location__ = os.path.realpath(
-    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+__location__ = os.path.dirname(os.path.realpath(__file__))
+
 
 # Fix for python 2 FileNotFoundError
 try:
