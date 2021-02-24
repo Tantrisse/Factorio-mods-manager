@@ -9,6 +9,7 @@ import hashlib
 import argparse
 import subprocess
 import re
+import copy
 from datetime import datetime
 from packaging.version import parse
 
@@ -135,28 +136,59 @@ def find_version():
         return main_version
 
 
+glob_mod_list = []
+
+
 def read_mods_list(remove_base=True):
     debug('Parsing "mod-list.json"...')
-    with open(glob['mods_list_path'], 'r') as fd:
-        mods_list_dict = json.load(fd)['mods']
+    global glob_mod_list
+
+    if not glob_mod_list:
+        with open(glob['mods_list_path'], 'r') as fd:
+            glob_mod_list = json.load(fd)['mods']
+
     # Remove the 'base' mod
+    installed_mods_list = copy.deepcopy(glob_mod_list)
     if remove_base:
-        mods_list_dict.pop(0)
+        installed_mods_list.pop(0)
 
-    return mods_list_dict
+    return installed_mods_list
 
 
-def write_mods_list(mods_list):
+def add_to_glob_mod_list(new_mod):
+    global glob_mod_list
+    read_mods_list(False)
+
+    mod_found = False
+    for mod in glob_mod_list:
+        if mod['name'] == new_mod['name']:
+            mod['enabled'] = new_mod['enabled']
+            mod_found = True
+            break
+
+    if not mod_found:
+        glob_mod_list.append(new_mod)
+
+
+def remove_to_glob_mod_list(mod_to_remove):
+    global glob_mod_list
+    read_mods_list(False)
+
+    glob_mod_list[:] = [d for d in glob_mod_list if d.get('name') != mod_to_remove['name']]
+
+
+def write_mods_list():
     debug('Writing to mod-list.json')
+    global glob_mod_list
     mods_list_json = {
-        "mods": mods_list
+        "mods": glob_mod_list
     }
     if glob['dry_run']:
-        print('Dry-running, would have writed this mods list : %s' % mods_list_json)
+        print('Dry-running, would have writen this mods list : %s' % json.dumps(mods_list_json, indent=2))
         return
 
     with open(glob['mods_list_path'], 'w') as fd:
-        json.dump(mods_list_json, fd, indent=4)
+        json.dump(mods_list_json, fd, indent=2)
 
 
 def remove_file(file_path):
@@ -187,13 +219,13 @@ def get_mod_infos(mod, min_mod_version='latest'):
     r = requests.get(request_url)
     if r.status_code != 200:
         print('Error getting mod "' + mod['name'] + '" infos. Ignoring this mod, please, check your "mod-list.json" file.')
-        return
+        return False
 
     json_result = r.json()
 
     if 'releases' not in json_result or len(json_result['releases']) == 0:
         debug('Mod "%s" does not seems to have any release ! Skipping...' % (mod['name']))
-        return
+        return False
 
     sorted_releases = sorted(json_result['releases'], key=lambda i: datetime.strptime(i['released_at'], '%Y-%m-%dT%H:%M:%S.%fZ'), reverse=True)
 
@@ -211,7 +243,7 @@ def get_mod_infos(mod, min_mod_version='latest'):
                 mod['name'],
                 min_mod_version
             ))
-            return
+            return False
 
     mods_infos = {
         'name': mod['name'],
@@ -223,35 +255,48 @@ def get_mod_infos(mod, min_mod_version='latest'):
     return mods_infos
 
 
-def parse_dependencies(release):
-    dependencies = {"required": [], "optional": [], "conflict": []}
-    for mod in release['info_json']['dependencies']:
+def parse_dependencies(dependencies):
+    filtered_dependencies = {"required": [], "optional": [], "conflict": []}
+
+    for mod in dependencies:
         # We clean the the mod name
         mod = "".join(mod.split())
+        # Split the version comparator. TODO : capture the comparator for later use
+        mod = re.split('<|<=|=|>=|>', mod)
+
+        if len(mod) == 1:
+            mod.append('latest')
 
         # Skip the "base" mod
         # Skip mod name starting with "!" (conflict)
+        # Skip mod name starting with "(!)" (optional conflict, should not exists for now)
         # Skip mod name starting with "?" (optional)
-        # Skip mod name not containing a version constraint (malformed api side ?..)
-        if not mod.startswith('base') and not mod.startswith('!') and not mod.startswith('?') and ">=" in mod:
+        # Skip mod name starting with "(?)" (hidden optional)
+        if not mod[0].startswith('base') \
+                and not mod[0].startswith('!') \
+                and not mod[0].startswith('(!)') \
+                and not mod[0].startswith('?') \
+                and not mod[0].startswith('(?)'):
             # Split the name and version requirement
-            version = mod.split('>=')
-            dependencies['required'].append(version)
+            filtered_dependencies['required'].append(mod)
         else:
 
-            if mod.startswith('?') and ">=" in mod:
-                # Remove the first char (?)
-                mod = mod[1:]
+            # we ignore dependencies starting with "(?)" as they are hidden optional
+            # listed only for load order
+            if mod[0].startswith('?'):
+                # Remove the first char : "?"
+                mod[0] = mod[0][1:]
                 # Split the name and version requirement
-                version = mod.split(">=")
-                dependencies['optional'].append(version)
+                filtered_dependencies['optional'].append(mod)
 
-            if mod.startswith('!'):
-                # Remove the first char (!)
-                mod = mod[1:]
-                dependencies['conflict'].append(mod)
+            # the case "(!)" should not exists but hey, we saw weird things from the API...
+            if mod[0].startswith('!') or mod[0].startswith('(!)'):
+                # Remove the first char "!" or "(!)"
+                mod[0] = mod[0][1:] if mod[0].startswith('!') else mod[0][3:]
 
-    return dependencies
+                filtered_dependencies['conflict'].append(mod)
+
+    return filtered_dependencies
 
 
 def mod_has_conflicts(conflict_list):
@@ -303,12 +348,22 @@ def update_mods(enabled_only):
         debug('Downloading mod %s' % (mod_infos['name']))
         download_mod(file_path, mod_infos['same_version_releases'][0]['download_url'])
 
-        # Save globaly that a reload of Factorio is needed in the end.
+        # Save globally that a reload of Factorio is needed in the end.
         glob['has_to_reload'] = True
+
+
+glob_install_mod_seen = {}
 
 
 def install_mod(mod_name, min_mod_version='latest', install_optional_dependencies=True):
     debug('Installing mod %s' % mod_name)
+    global glob_install_mod_seen
+
+    if mod_name in glob_install_mod_seen:
+        debug('Mod already seen, skipping...')
+        return
+
+    glob_install_mod_seen[mod_name] = True
 
     mod = {
         'name': mod_name,
@@ -327,7 +382,7 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
     target_release = mod_infos['same_version_releases'][0]
 
     # Check for dependencies if needed
-    dependencies = parse_dependencies(target_release)
+    dependencies = parse_dependencies(target_release['info_json']['dependencies'])
     # Check for conflicts
     conflict = mod_has_conflicts(dependencies['conflict'])
     if conflict is not False:
@@ -363,20 +418,15 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
                 # where $mod_name$ is name of the optional dependency
                 install_mod(optional[0], optional[1], False)
 
-    # We add the mod in the 'mod-list.json' file (enabled by default)
-    # It may create duplicate to add it here but there's no impact and factorio will clean the
-    # 'mod-list.json' file by itself.
-    # We do it anyway in case the mod file exists but the 'mod-list.json' file is not up to date.
-    mods_list = read_mods_list(False)
-    mods_list.append(mod)
-    write_mods_list(mods_list)
+    # Add the mod to the global list of mods which will be wrote to "mod-list.json" later
+    add_to_glob_mod_list(mod)
 
     # Check if file already exists and have the same sha1
     file_path = os.path.join(glob['mods_folder_path'], target_release['file_name'])
     if check_file_and_sha(file_path, target_release['sha1']):
         return
 
-    # Dowload the file
+    # Download the file
     debug('Downloading mod %s' % (mod_infos['name']))
     file_path = os.path.join(glob['mods_folder_path'], target_release['file_name'])
     download_mod(file_path, target_release['download_url'])
@@ -387,14 +437,24 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
         target_release['info_json']['factorio_version']
     ))
 
-    # Save globaly that a reload of Factorio is needed in the end.
+    # Save globally that a reload of Factorio is needed in the end.
     glob['has_to_reload'] = True
 
     return True
 
 
+glob_remove_mod_seen = {}
+
+
 def remove_mod(mod_name, remove_optional_dependencies=True):
     print('Removing mod "%s"' % mod_name)
+    global glob_remove_mod_seen
+
+    if mod_name in glob_remove_mod_seen:
+        debug('Mod already removed, skipping...')
+        return
+
+    glob_remove_mod_seen[mod_name] = True
 
     mod = {
         'name': mod_name,
@@ -402,12 +462,15 @@ def remove_mod(mod_name, remove_optional_dependencies=True):
     }
 
     mod_infos = get_mod_infos(mod)
+    if not mod_infos or len(mod_infos['same_version_releases']) == 0:
+        print('No matching version found for the mod "%s". Skipping...' % (mod['name']))
+        return False
 
     # Filter the one release we'll use
     target_release = mod_infos['same_version_releases'][0]
 
     if glob['remove_required_dependencies'] is True or glob['remove_optional_dependencies'] is True:
-        dependencies = parse_dependencies(target_release)
+        dependencies = parse_dependencies(target_release['info_json']['dependencies'])
 
         if glob['remove_required_dependencies'] is True:
             for required in dependencies['required']:
@@ -432,23 +495,18 @@ def remove_mod(mod_name, remove_optional_dependencies=True):
 
     if mod_infos is not None and 'releases' in mod_infos:
         releases = mod_infos['releases']
-        for mod in releases:
-            file_path = os.path.join(glob['mods_folder_path'], mod['file_name'])
+        for release in releases:
+            file_path = os.path.join(glob['mods_folder_path'], release['file_name'])
             remove_file(file_path)
     else:
         debug('No releases found for the mod "%s" skipping...' % mod_name)
         return False
 
-    # We remove the mod from the 'mod-list.json' file if found
-    mods_list = read_mods_list(False)
-    new_mods_list = []
-    for mod in mods_list:
-        if mod_name != mod['name']:
-            new_mods_list.append(mod)
+    # We remove the mod from the global list of installed mods,
+    # 'mod-list.json' file will be wrote after
+    remove_to_glob_mod_list(mod)
 
-    write_mods_list(new_mods_list)
-
-    # Save globaly that a reload of Factorio is needed in the end.
+    # Save globally that a reload of Factorio is needed in the end.
     glob['has_to_reload'] = True
 
 
@@ -463,7 +521,7 @@ def download_mod(file_path, download_url):
     if r.headers.get('Content-Type') != 'application/zip':
         print('Error : Response is not a Zip file !')
         print('It might happen because your Username and/or Token are wrong or deactivated.')
-        print('Abording the mission...')
+        print('Aborting the mission...')
         exit(1)
 
     with open(file_path, 'wb') as fd:
@@ -487,14 +545,14 @@ def download_mod(file_path, download_url):
 def update_state_mods(mods_name_list, should_enable):
     print('%s mod(s) %s' % ('Enabling' if should_enable else 'Disabling', mods_name_list))
 
-    mods_list = read_mods_list(False)
-    for mod in mods_list:
-        if mod['name'] in mods_name_list:
-            mod['enabled'] = should_enable
+    for mod in mods_name_list:
+        mod_list = {
+            'name': mod,
+            'enabled': should_enable
+        }
+        add_to_glob_mod_list(mod_list)
 
-    write_mods_list(mods_list)
-
-    # Save globaly that a reload of Factorio is needed in the end.
+    # Save globally that a reload of Factorio is needed in the end.
     glob['has_to_reload'] = True
 
 
@@ -588,7 +646,7 @@ def check_mod_manager_update():
             ###############################################################################################
             """)
     except FileNotFoundError:
-        debug('Cannot find "git" excecutable, skipping...')
+        debug('Cannot find "git" executable, skipping...')
 
 
 def main():
@@ -606,6 +664,11 @@ def main():
     if glob['disable_mod_manager_update'] is False:
         check_mod_manager_update()
 
+    # List installed mods
+    if args.list_mods:
+        display_mods_list(read_mods_list())
+        exit(0)
+
     # Enabled mods
     if args.enable_mods_name:
         update_state_mods(args.enable_mods_name, True)
@@ -615,11 +678,6 @@ def main():
     if args.disable_mods_name:
         update_state_mods(args.disable_mods_name, False)
         print()
-
-    # List installed mods
-    if args.list_mods:
-        display_mods_list(read_mods_list())
-        exit(0)
 
     # If we should update the mods
     if args.should_update:
@@ -636,11 +694,13 @@ def main():
         remove_mod(args.remove_mod_name)
         print()
 
+    write_mods_list()
+
     if glob['has_to_reload'] is True:
         print('The mod configuration changed and Factorio need to be restarted in order to apply the changes.')
 
         if glob['dry_run']:
-            print('Dry-running, would have%s automaticaly reloaded' % (" NOT" if glob['should_reload'] is False else ""))
+            print('Dry-running, would have%s automatically reloaded' % (" NOT" if glob['should_reload'] is False else ""))
             return
 
         if glob['should_reload'] is True:
