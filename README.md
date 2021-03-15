@@ -9,7 +9,7 @@ This script has been tested (only on Debian) with Python 2.7 and 3.9 using [Requ
 
 1. Clone this repository in any directory. Here, `/opt/factorio-mod-manager` as an example.
 ```shell script
-git clone git@github.com:Tantriss/Factorio-mod-manager.git /opt/factorio-mod-manager
+git clone git@github.com:Tantrisse/Factorio-mods-manager.git /opt/factorio-mod-manager
 ```
 
 2. Install the required dependency by running 
@@ -26,11 +26,13 @@ easy_install `cat requirements.txt`
 
 ## Configuration ##
 
-Some constant parameters can be put in a config file. These options are (option | default | definition):
+Some constant parameters can be put in a config file. These options are 
+
+(option | default | definition):
 
 * **verbose** | false | Enable verbose (debug messages) mode.
 
-* **disable_mod_manager_update** | false | If true, disable the auto-update of this script (done via `git pull`).
+* **disable_mod_manager_update** | true | If true, disable the auto-update of this script (done via `git pull`).
 
 * **factorio_path** | none *(not set)* | The path to the root folder of your Factorio installation.
 
@@ -52,6 +54,10 @@ Some constant parameters can be put in a config file. These options are (option 
 
 * **service_name** | none *(not set)* | If Factorio is started via a service and you want to restart it automatically
 
+* **alternative_glibc_directory** | none *(not set)* Absolute path to the side by side GLIBC root, used for systems using older glibc versions (RHEL CentOS and others...)
+
+* **alternative_glibc_version** | none *(not set)* Version of alt GLIBC (2.18 is the minimum required for factorio)
+
 
 
 An example file can be found in this repo, just copy `config.example.json` to `config.json` and edit values inside.
@@ -60,59 +66,15 @@ Keep in mind that any corresponding command line argument will **override** thes
 
 ## Usage ##
 
-From there, it's really simple: go in the folder you where you cloned this repo earlier, and run it (try it with `--help` first!). Here's an example session:
+There is too much possibilities to cover them all here ! You can get a summary of all commands and flags by simply going in the folder where you cloned this repo, and run 
 
 ```shell script
-$ python mods_manager.py -h
-usage: mods_manager.py [-h] [-p FACTORIO_PATH] [-u USERNAME] [-t TOKEN] [-d] [-i MOD_NAME_TO_INSTALL] [-U] [-e] [-l] [-r REMOVE_MOD_NAME] [-E ENABLE_MODS_NAME] [-D DISABLE_MODS_NAME] [--downgrade] [--reload] [-s SERVICE_NAME] [-v]        
-                       [-nmmu] [-nrd] [-iod] [-rrd] [-rod] [-icd]                                                                                                                                                                             
-                                                                                                                                                                                                                                              
-Install / Update / Remove mods for Factorio
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -p FACTORIO_PATH, --path-to-factorio FACTORIO_PATH
-                        Path to your Factorio folder.
-  -u USERNAME, --user USERNAME
-                        Your Factorio username, from player-data.json.
-  -t TOKEN, --token TOKEN
-                        Your Factorio token, from player-data.json.
-  -d, --dry-run         Don't download files, just state which mods updates would be downloaded.
-  -i MOD_NAME_TO_INSTALL, --install MOD_NAME_TO_INSTALL
-                        Install the given mod. See README to easily find the correct mod name.
-  -U, --update          Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.
-  -e, --update-enabled-only
-                        Will only updates mods 'enabled' in 'mod-list.json'.
-  -l, --list            List installed mods and return. Ignore other switches.
-  -r REMOVE_MOD_NAME, --remove REMOVE_MOD_NAME
-                        Remove specified mod.
-  -E ENABLE_MODS_NAME, --enable ENABLE_MODS_NAME
-                        A mod name to enable. Repeat the flag for each mod you want to enable.
-  -D DISABLE_MODS_NAME, --disable DISABLE_MODS_NAME
-                        A mod name to disable. Repeat the flag for each mod you want to disable.
-  --downgrade           If no compatible version is found, install / update the last mod version for precedent Factorio version.
-                        (ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)
-  --reload              Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.
-  -s SERVICE_NAME, --service-name SERVICE_NAME
-                        The service name used to launch Factorio. Do not pass anything if not the case (prevent reloading).
-  -v, --verbose         Print URLs and stuff as they happen.
-  -nmmu, --no-mod-manager-update
-                        Disable the checking of Factorio-mod-manager updates. Please disable it ONLY if you encounter errors with this feature (eg: you don't have git installed).
-  -nrd, --no-required-dependencies
-                        Disable the auto-installation of REQUIRED dependencies.
-  -iod, --install-optional-dependencies
-                        Enable the auto-installation of OPTIONAL dependencies.
-  -rrd, --remove-required-dependencies
-                        Enable the removal of all the REQUIRED dependencies of the mod asked to be removed.
-  -rod, --remove-optional-dependencies
-                        Enable the removal of all the OPTIONAL dependencies of the mod asked to be removed.
-  -icd, --ignore-conflicts-dependencies
-                        Ignore any conflicts between mods.
+python mods_manager.py --help
 ```
 
 --------
 
-### More complex example :
+### A complex example :
 
 Here we want to :
 
@@ -158,6 +120,20 @@ You can do it directly from mod portal !
 Once you find an interesting mod, for example `Bob's Metals, Chemicals and Intermediates`, open the mod portal page, here https://mods.factorio.com/mod/bobplates
 
 The correct mod name to use is the last part of the URL : `bobplates`.
+
+## On the error "version `GLIBC_2.18' not found"
+
+If you encounter an error about **GLIBC 2.18** not found, you can install it using [this thread on the factorio forum by **millisa**](https://forums.factorio.com/viewtopic.php?t=54654#p324493).
+
+When following the aforementioned guide, if you stumble across the error `These critical programs are missing or too old: make` when doing `../configure --prefix='/opt/glibc-2.18'` and your make version is up to date, just run this command and try again :
+```
+sed "s/3\.\[89\]/3\.\[89\]\* | 4/" -i ../configure
+```
+You should be able to finish the installation of GLIBC.
+
+After that, you need to add to the `config.json` file of `Factorio-mod-manager` these 2 key : `alternative_glibc_directory` and `alternative_glibc_version`. You cas use the command line parameters `--alternative-glibc-directory` and `--alternative-glibc-version` instead of the `config.json` file.
+
+See [the part about configuration](#configuration) to know what value to pass.
 
 ## A note on mod not installing / updating
 

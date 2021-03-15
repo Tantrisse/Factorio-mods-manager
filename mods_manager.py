@@ -43,7 +43,9 @@ glob = {
     'install_optional_dependencies': False,
     'remove_required_dependencies': True,
     'remove_optional_dependencies': False,
-    'ignore_conflicts_dependencies': False
+    'ignore_conflicts_dependencies': False,
+    'alternative_glibc_directory': None,
+    'alternative_glibc_version': None
 }
 
 
@@ -123,10 +125,29 @@ parser.add_argument('-rod', '--remove-optional-dependencies', action='store_true
 parser.add_argument('-icd', '--ignore-conflicts-dependencies', action='store_true', dest='ignore_conflicts_dependencies',
                     help="Ignore any conflicts between mods.")
 
+parser.add_argument('--alternative-glibc-directory', dest='alt_glibc_dir',
+                    help="Path to the root directory of the alternative GLIBC library.")
+
+parser.add_argument('--alternative-glibc-version', dest='alt_glibc_version',
+                    help="Version of the alternative GLIBC library.")
+
 
 def find_version():
     binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
-    version_output = subprocess.check_output([binary_path, "--version"], universal_newlines=True)
+
+    cmd = []
+    if glob['alternative_glibc_directory'] is not None and glob['alternative_glibc_version'] is not None:
+        cmd.extend((
+            "%s/lib/ld-%s.so" % (glob['alternative_glibc_directory'], glob['alternative_glibc_version']),
+            "--library-path",
+            "%s/lib" % glob['alternative_glibc_directory'],
+            binary_path,
+            "--executable-path"
+        ))
+
+    cmd.extend((binary_path, '--version'))
+    version_output = subprocess.check_output(cmd, universal_newlines=True)
+    # version_output = subprocess.check_output([binary_path, "--version"], universal_newlines=True)
     # We only capture the MAIN and MAJOR version because from a mod pov the minor version should never be specified
     # see : https://wiki.factorio.com/Tutorial:Mod_structure#info.json -> "factorio_version"
     # "Adding a minor version, e.g. "0.18.27" will make the mod portal reject the mod and the game act weirdly"
@@ -565,6 +586,31 @@ def load_config(args):
     except FileNotFoundError:
         print("Couldn't load config file, as it didn't exist. Continuing with defaults anyway.")
         config = {}
+
+    # GLIBC related
+    glob['alternative_glibc_directory'] = args.alt_glibc_dir if args.alt_glibc_dir \
+        else (config['alternative_glibc_directory'] if "alternative_glibc_directory" in config else glob['alternative_glibc_directory'])
+    glob['alternative_glibc_version'] = args.alt_glibc_dir if args.alt_glibc_version \
+        else (config['alternative_glibc_version'] if "alternative_glibc_version" in config else glob['alternative_glibc_version'])
+
+    # We check that if either of glibc params is set, the other is too.
+    if (glob['alternative_glibc_directory'] is None and glob['alternative_glibc_version'] is not None) \
+            or (glob['alternative_glibc_directory'] is not None and glob['alternative_glibc_version'] is None):
+        parser.error(
+            'The directory and version parameters for GLIBC must both have a value or not be specified at all. Got :\n'
+            'alternative-glibc-directory : %s\n'
+            'alternative-glibc-version : %s'
+            % (glob['alternative_glibc_directory'], glob['alternative_glibc_version'])
+        )
+    if glob['alternative_glibc_directory'] is not None and not os.path.isdir(glob['alternative_glibc_directory']):
+        parser.error('The directory "%s" for the alternative GLIBC library points to nothing !' % glob['alternative_glibc_directory'])
+
+    glibc_lib_file = "%s/lib/ld-%s.so" % (glob['alternative_glibc_directory'], glob['alternative_glibc_version'])
+    if glob['alternative_glibc_directory'] is not None and not os.path.isfile(glibc_lib_file):
+        parser.error(
+            'Could not find the GLIBC lib file corresponding to version %s ! The file "%s" must exists.' %
+            (glob['alternative_glibc_version'], glibc_lib_file)
+        )
 
     # Service related
     glob['should_reload'] = args.should_reload if args.should_reload is True \

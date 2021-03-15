@@ -1,7 +1,7 @@
 {
     "verbose": false,
     "disable_mod_manager_update": true,
-    "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",,
+    "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",
     "username": "Your Username here. See README",
     "token": "Your Token here. See README",
     "should_downgrade": false,
@@ -10,5 +10,7 @@
     "remove_required_dependencies": true,
     "ignore_conflicts_dependencies": false,
     "should_reload": false,
-    "service_name": "The name of the service used to start Factorio"
+    "service_name": "The name of the service used to start Factorio",
+    "alternative_glibc_directory": "Path to folder where glibc is installed. Eg: /opt/glibc-2.18",
+    "alternative_glibc_version":  "Version of glibc in the 'alternative_glibc_directory'. Eg: 2.18"
 }
