@@ -285,6 +285,13 @@ def get_mod_infos(mod, min_mod_version='latest'):
     return mods_infos
 
 
+# Dependencies rules :
+#   "no prefix" = required (must be installed)
+#   "~"         = required but does not affect load order (must be installed)
+#   "?"         = optional (can be installed)
+#   "(?)"       = hidden optional, used to change load order (should not be installed)
+#   "!"         = conflict (must NOT be installed)
+#   "(!)"       = conflict, should not exists but I swear I saw it one time (must NOT be installed)
 def parse_dependencies(dependencies):
     filtered_dependencies = {"required": [], "optional": [], "conflict": []}
 
@@ -297,34 +304,28 @@ def parse_dependencies(dependencies):
         if len(mod) == 1:
             mod.append('latest')
 
-        # Skip the "base" mod
-        # Skip mod name starting with "!" (conflict)
-        # Skip mod name starting with "(!)" (optional conflict, should not exists for now)
-        # Skip mod name starting with "?" (optional)
-        # Skip mod name starting with "(?)" (hidden optional)
-        if not mod[0].startswith('base') \
-                and not mod[0].startswith('!') \
-                and not mod[0].startswith('(!)') \
-                and not mod[0].startswith('?') \
-                and not mod[0].startswith('(?)'):
-            # Split the name and version requirement
-            filtered_dependencies['required'].append(mod)
-        else:
-
-            # we ignore dependencies starting with "(?)" as they are hidden optional
-            # listed only for load order
-            if mod[0].startswith('?'):
-                # Remove the first char : "?"
+        # Skip "base", "!", "(!)", "?", "(?)"
+        if mod[0].find('base') == -1 and not mod[0].startswith(('!', '(!)', '?', '(?)')):
+            # TODO future : Split the name and version requirement
+            if mod[0].startswith('~'):
+                # Remove the first char : "~"
                 mod[0] = mod[0][1:]
-                # Split the name and version requirement
-                filtered_dependencies['optional'].append(mod)
+            filtered_dependencies['required'].append(mod)
 
-            # the case "(!)" should not exists but hey, we saw weird things from the API...
-            if mod[0].startswith('!') or mod[0].startswith('(!)'):
-                # Remove the first char "!" or "(!)"
-                mod[0] = mod[0][1:] if mod[0].startswith('!') else mod[0][3:]
+        # we ignore dependencies starting with "(?)" as they are hidden optional
+        # listed only for load order
+        elif mod[0].startswith('?'):
+            # Remove the first char : "?"
+            mod[0] = mod[0][1:]
+            # Split the name and version requirement
+            filtered_dependencies['optional'].append(mod)
 
-                filtered_dependencies['conflict'].append(mod)
+        # the case "(!)" should not exists but hey, we saw weird things from the API...
+        elif mod[0].startswith('!') or mod[0].startswith('(!)'):
+            # Remove the first char "!" or "(!)"
+            mod[0] = mod[0][1:] if mod[0].startswith('!') else mod[0][3:]
+
+            filtered_dependencies['conflict'].append(mod)
 
     return filtered_dependencies
 
