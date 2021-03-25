@@ -166,13 +166,21 @@ def read_mods_list(remove_base=True):
     global glob_mod_list
 
     if not glob_mod_list:
-        with open(glob['mods_list_path'], 'r') as fd:
-            glob_mod_list = json.load(fd)['mods']
+        try:
+            with open(glob['mods_list_path'], 'r') as fd:
+                json_decoded = json.load(fd)
+                if 'mods' not in json_decoded:
+                    print('Error while reading the "mod-list.json" file in %s, there is no mods in it (no "mods" key) !' % glob['mods_list_path'])
+                    exit(1)
+                glob_mod_list = json_decoded['mods']
+        except json.JSONDecodeError:
+            print('Error while reading the "mod-list.json" file in %s, it cannot be parsed to Json !' % glob['mods_list_path'])
+            exit(1)
 
     # Remove the 'base' mod
     installed_mods_list = copy.deepcopy(glob_mod_list)
     if remove_base:
-        installed_mods_list.pop(0)
+        installed_mods_list[:] = [d for d in glob_mod_list if d.get('name') != 'base']
 
     return installed_mods_list
 
