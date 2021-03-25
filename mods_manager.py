@@ -92,7 +92,7 @@ group.add_argument('-i', '--install', dest='mod_name_to_install',
 
 group = parser.add_argument_group('Mod update')
 group.add_argument('-U', '--update', action='store_true', dest='should_update',
-                   help="Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.")
+                   help="Enable the update process. By default, all mods are updated. See -e/--update-enabled-only.")
 
 group.add_argument('-e', '--update-enabled-only', action='store_true', dest='enabled_only',
                    help="Will only updates mods 'enabled' in 'mod-list.json'.")
@@ -696,7 +696,7 @@ def debug(string):
 
 
 def check_mod_manager_update():
-    debug('Checking for updates...')
+    print('Checking for updates...')
     # Python 2 compatibility to silence the call
     try:
         with open(os.devnull, 'wb') as shutup:
@@ -708,8 +708,10 @@ def check_mod_manager_update():
             An update of Factorio-mod-manager is available but cannot be applied via git-pull ! Ignoring...
             ###############################################################################################
             """)
+        else:
+            print("No new version found, exiting...")
     except FileNotFoundError:
-        debug('Cannot find "git" executable, skipping...')
+        print('Cannot find "git" executable, skipping...')
 
 
 def main():
