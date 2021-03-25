@@ -391,7 +391,7 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
     global glob_install_mod_seen
 
     if mod_name in glob_install_mod_seen:
-        debug('Mod already seen, skipping...')
+        print('Mod "%s" already seen, skipping...' % mod_name)
         return
 
     glob_install_mod_seen[mod_name] = True
@@ -425,29 +425,12 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
             exit(0)
 
     # Install required / optional dependencies
-    if glob['install_required_dependencies'] is True or glob['install_optional_dependencies'] is True:
-        if glob['install_required_dependencies'] is True:
-            for required in dependencies['required']:
-                print('Installing dependency "%s" version >= "%s" for "%s"' % (
-                    required[0],
-                    required[1],
-                    mod_name
-                ))
-                # Install the dependency and set the flag for optional dependencies (of the dependency) to False
-                install_mod(required[0], required[1], False)
+    if glob['install_required_dependencies'] is True:
+        install_dependencies(mod_name, dependencies, "required")
 
-        # Check for optional dependencies if needed
-        if install_optional_dependencies is True and glob['install_optional_dependencies'] is True:
-            for optional in dependencies['optional']:
-                print('Installing optional dependency "%s" version >= "%s" for "%s"' % (
-                    optional[0],
-                    optional[1],
-                    mod_name
-                ))
-                # Install the dependency but NOT it's own optional dependencies
-                # They should be installed by doing 'mod_manager.py -i $mod_name$ -iod'
-                # where $mod_name$ is name of the optional dependency
-                install_mod(optional[0], optional[1], False)
+    # Check for optional dependencies if needed
+    if install_optional_dependencies is True and glob['install_optional_dependencies'] is True:
+        install_dependencies(mod_name, dependencies, "optional")
 
     # Add the mod to the global list of mods which will be wrote to "mod-list.json" later
     add_to_glob_mod_list(mod)
@@ -474,15 +457,30 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
     return True
 
 
+def install_dependencies(parent_name, dependencies, dependencies_type):
+    # Install required / optional dependencies
+    for dependency in dependencies[dependencies_type]:
+        print('Installing %s dependency "%s" version >= "%s" for "%s"' % (
+            dependencies_type,
+            dependency[0],
+            dependency[1],
+            parent_name
+        ))
+        # Install the dependency and set the flag for optional dependencies (of the dependency) to False
+        # Optional dependencies of a dependency should be installed by doing 'mod_manager.py -i $mod_name$ -iod'
+        # where $mod_name$ is name of the optional dependency
+        install_mod(dependency[0], dependency[1], False)
+
+
 glob_remove_mod_seen = {}
 
 
 def remove_mod(mod_name, remove_optional_dependencies=True):
-    print('Removing mod "%s"' % mod_name)
+    print('Removing "%s"' % mod_name)
     global glob_remove_mod_seen
 
     if mod_name in glob_remove_mod_seen:
-        debug('Mod already removed, skipping...')
+        print('Mod %s already removed, skipping...' % mod_name)
         return
 
     glob_remove_mod_seen[mod_name] = True
@@ -500,33 +498,19 @@ def remove_mod(mod_name, remove_optional_dependencies=True):
     # Filter the one release we'll use
     target_release = mod_infos['same_version_releases'][0]
 
-    if glob['remove_required_dependencies'] is True or glob['remove_optional_dependencies'] is True:
-        dependencies = parse_dependencies(target_release['info_json']['dependencies'])
+    if glob['remove_required_dependencies'] is True or \
+            (glob['remove_optional_dependencies'] is True and remove_optional_dependencies is True):
 
+        dependencies = parse_dependencies(target_release['info_json']['dependencies'])
         if glob['remove_required_dependencies'] is True:
-            for required in dependencies['required']:
-                print('Removing mod "%s" being a required dependency of "%s"' % (
-                    required[0],
-                    mod_name
-                ))
-                # Remove the dependency but NOT it's own optional dependencies.
-                remove_mod(required[0], False)
+            remove_dependencies(mod_name, dependencies, "required")
 
         # Check for optional dependencies if needed
         if remove_optional_dependencies is True and glob['remove_optional_dependencies'] is True:
-            for optional in dependencies['optional']:
-                print('Removing mod "%s" being a required dependency of "%s"' % (
-                    optional[0],
-                    mod_name
-                ))
-                # Remove the dependency but NOT it's own optional dependencies.
-                # They should be removed by doing 'mod_manager.py -d $mod_name$ -rod'
-                # where $mod_name$ is name of the optional dependency
-                remove_mod(optional[0], False)
+            remove_dependencies(mod_name, dependencies, "optional")
 
     if mod_infos is not None and 'releases' in mod_infos:
-        releases = mod_infos['releases']
-        for release in releases:
+        for release in mod_infos['releases']:
             file_path = os.path.join(glob['mods_folder_path'], release['file_name'])
             remove_file(file_path)
     else:
@@ -534,11 +518,25 @@ def remove_mod(mod_name, remove_optional_dependencies=True):
         return False
 
     # We remove the mod from the global list of installed mods,
-    # 'mod-list.json' file will be wrote after
+    # 'mod-list.json' file will be wrote later
     remove_to_glob_mod_list(mod)
 
     # Save globally that a reload of Factorio is needed in the end.
     glob['has_to_reload'] = True
+
+
+def remove_dependencies(parent_name, dependencies, dependencies_type):
+    # Remove required / optional dependencies
+    for dependency in dependencies[dependencies_type]:
+        print('Removing "%s", %s dependency of "%s"' % (
+            dependency[0],
+            dependencies_type,
+            parent_name
+        ))
+        # Remove the dependency but NOT it's own optional dependencies
+        # Optional dependencies of a dependency should be removed by doing 'mod_manager.py -r $mod_name$ -rod'
+        # where $mod_name$ is name of the optional dependency
+        remove_mod(dependency[0], False)
 
 
 def download_mod(file_path, download_url):
