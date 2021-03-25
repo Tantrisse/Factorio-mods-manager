@@ -62,72 +62,85 @@ def get_file_sha1(file_name):
 
 parser = argparse.ArgumentParser(description="Install / Update / Remove mods for Factorio", formatter_class=argparse.RawTextHelpFormatter)
 
-parser.add_argument('-p', '--path-to-factorio', dest='factorio_path',
-                    help="Path to your Factorio folder.")
+group = parser.add_argument_group('Behavior')
+group.add_argument('-v', '--verbose', action='store_true', dest='verbose',
+                   help="Print URLs and stuff as they happen.")
 
-parser.add_argument('-u', '--user', dest='username',
-                    help="Your Factorio username, from player-data.json.")
-parser.add_argument('-t', '--token', dest='token',
-                    help="Your Factorio token, from player-data.json.")
+group.add_argument('-d', '--dry-run', action='store_true', dest='dry_run',
+                   help="Don't download files, just state which mods updates would be downloaded.")
 
-parser.add_argument('-d', '--dry-run', action='store_true', dest='dry_run',
-                    help="Don't download files, just state which mods updates would be downloaded.")
+group.add_argument('--downgrade', action='store_true', dest='should_downgrade',
+                   help="If no compatible version is found, install / update the last mod version for precedent Factorio version.\n"
+                        "(ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)")
 
-parser.add_argument('-i', '--install', dest='mod_name_to_install',
-                    help="Install the given mod. See README to easily find the correct mod name.")
+group = parser.add_argument_group('Local configuration (override config.json)')
+group.add_argument('-p', '--path-to-factorio', dest='factorio_path',
+                   help="Path to your Factorio folder.")
 
-parser.add_argument('-U', '--update', action='store_true', dest='should_update',
-                    help="Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.")
-parser.add_argument('-e', '--update-enabled-only', action='store_true', dest='enabled_only',
-                    help="Will only updates mods 'enabled' in 'mod-list.json'.")
+group.add_argument('-u', '--user', dest='username',
+                   help="Your Factorio username, from player-data.json.")
+group.add_argument('-t', '--token', dest='token',
+                   help="Your Factorio token, from player-data.json.")
 
-parser.add_argument('-l', '--list', action='store_true', dest='list_mods',
-                    help="List installed mods and return. Ignore other switches.")
+group = parser.add_argument_group('Mod listing')
+group.add_argument('-l', '--list', action='store_true', dest='list_mods',
+                   help="List installed mods and return. Ignore other switches.")
 
-parser.add_argument('-r', '--remove', dest='remove_mod_name',
-                    help="Remove specified mod.")
+group = parser.add_argument_group('Mod installation')
+group.add_argument('-i', '--install', dest='mod_name_to_install',
+                   help="Install the given mod. See README to easily find the correct mod name.")
 
-parser.add_argument('-E', '--enable', dest='enable_mods_name', action='append',
-                    help="A mod name to enable. Repeat the flag for each mod you want to enable.")
-parser.add_argument('-D', '--disable', dest='disable_mods_name', action='append',
-                    help="A mod name to disable. Repeat the flag for each mod you want to disable.")
+group = parser.add_argument_group('Mod update')
+group.add_argument('-U', '--update', action='store_true', dest='should_update',
+                   help="Enable the update process. By default, all mods are updated. Seed -e/--update-enabled-only.")
 
-parser.add_argument('--downgrade', action='store_true', dest='should_downgrade',
-                    help="If no compatible version is found, install / update the last mod version for precedent Factorio version.\n"
-                         "(ex: If mod has no Factorio 1.0.0 version, it will install the latest mod version for Factorio 0.18)")
+group.add_argument('-e', '--update-enabled-only', action='store_true', dest='enabled_only',
+                   help="Will only updates mods 'enabled' in 'mod-list.json'.")
 
-parser.add_argument('--reload', action='store_true', dest='should_reload',
-                    help="Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.")
+group = parser.add_argument_group('Mod removal')
+group.add_argument('-r', '--remove', dest='remove_mod_name',
+                   help="Remove specified mod.")
 
-parser.add_argument('-s', '--service-name', dest='service_name',
-                    help="The service name used to launch Factorio. Do not pass anything if not the case (prevent reloading).")
+group = parser.add_argument_group('Mod enabling / disabling')
+group.add_argument('-E', '--enable', dest='enable_mods_name', action='append',
+                   help="A mod name to enable. Repeat the flag for each mod you want to enable.")
 
-parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
-                    help="Print URLs and stuff as they happen.")
+group.add_argument('-D', '--disable', dest='disable_mods_name', action='append',
+                   help="A mod name to disable. Repeat the flag for each mod you want to disable.")
 
-parser.add_argument('-nrd', '--no-required-dependencies', action='store_true', dest='disable_required_dependencies',
-                    help="Disable the auto-installation of REQUIRED dependencies.")
+group = parser.add_argument_group('Service reloading (override config.json)')
+group.add_argument('--reload', action='store_true', dest='should_reload',
+                   help="Enable the restarting of Factorio if any mods are installed / updated. If set, service-name must be set.")
 
-parser.add_argument('-iod', '--install-optional-dependencies', action='store_true', dest='install_optional_dependencies',
-                    help="Enable the auto-installation of OPTIONAL dependencies.")
+group.add_argument('-s', '--service-name', dest='service_name',
+                   help="The service name used to launch Factorio. Do not pass anything if not the case (prevent reloading).")
 
-parser.add_argument('-nrrd', '--no-remove-required-dependencies', action='store_false', dest='remove_required_dependencies',
-                    help="Enable the removal of all the REQUIRED dependencies of the mod asked to be removed.")
+group = parser.add_argument_group('Dependencies management (override config.json)')
+group.add_argument('-nrd', '--no-required-dependencies', action='store_true', dest='disable_required_dependencies',
+                   help="Disable the auto-installation of REQUIRED dependencies.")
 
-parser.add_argument('-rod', '--remove-optional-dependencies', action='store_true', dest='remove_optional_dependencies',
-                    help="Enable the removal of all the OPTIONAL dependencies of the mod asked to be removed.")
+group.add_argument('-nrrd', '--no-remove-required-dependencies', action='store_false', dest='remove_required_dependencies',
+                   help="Enable the removal of all the REQUIRED dependencies of the mod asked to be removed.")
 
-parser.add_argument('-icd', '--ignore-conflicts-dependencies', action='store_true', dest='ignore_conflicts_dependencies',
-                    help="Ignore any conflicts between mods.")
+group.add_argument('-iod', '--install-optional-dependencies', action='store_true', dest='install_optional_dependencies',
+                   help="Enable the auto-installation of OPTIONAL dependencies.")
 
-parser.add_argument('--alternative-glibc-directory', dest='alt_glibc_dir',
-                    help="Path to the root directory of the alternative GLIBC library.")
+group.add_argument('-rod', '--remove-optional-dependencies', action='store_true', dest='remove_optional_dependencies',
+                   help="Enable the removal of all the OPTIONAL dependencies of the mod asked to be removed.")
 
-parser.add_argument('--alternative-glibc-version', dest='alt_glibc_version',
-                    help="Version of the alternative GLIBC library.")
+group.add_argument('-icd', '--ignore-conflicts-dependencies', action='store_true', dest='ignore_conflicts_dependencies',
+                   help="Ignore any conflicts between mods.")
 
-parser.add_argument('--update-mod-manager', action='store_true', dest='update_mod_manager',
-                    help="Update Factorio-mod-manager. Require GIT. Program will exit after, this flag should be used alone.")
+group = parser.add_argument_group('Alternative GLIBC options (override config.json)')
+group.add_argument('--alternative-glibc-directory', dest='alt_glibc_dir',
+                   help="Path to the root directory of the alternative GLIBC library.")
+
+group.add_argument('--alternative-glibc-version', dest='alt_glibc_version',
+                   help="Version of the alternative GLIBC library.")
+
+group = parser.add_argument_group('Self Updating')
+group.add_argument('--update-mod-manager', action='store_true', dest='update_mod_manager',
+                   help="Update Factorio-mod-manager. Require GIT. Program will exit after, this flag should be used alone.")
 
 
 def find_version():
