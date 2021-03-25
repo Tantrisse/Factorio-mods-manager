@@ -32,8 +32,6 @@ Some constant parameters can be put in a config file. These options are
 
 * **verbose** | false | Enable verbose (debug messages) mode.
 
-* **disable_mod_manager_update** | true | If true, disable the auto-update of this script (done via `git pull`).
-
 * **factorio_path** | none *(not set)* | The path to the root folder of your Factorio installation.
 
 * **username** | none *(not set)* | Your username, see [Username and token](#username-and-token).

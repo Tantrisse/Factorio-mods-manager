@@ -38,7 +38,6 @@ glob = {
     'service_name': None,
     'has_to_reload': None,
     'should_downgrade': False,
-    'disable_mod_manager_update': True,
     'install_required_dependencies': True,
     'install_optional_dependencies': False,
     'remove_required_dependencies': True,
@@ -106,10 +105,6 @@ parser.add_argument('-s', '--service-name', dest='service_name',
 parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
                     help="Print URLs and stuff as they happen.")
 
-parser.add_argument('-nmmu', '--no-mod-manager-update', action='store_true', dest='disable_mod_manager_update',
-                    help="Disable the checking of Factorio-mod-manager updates. "
-                         "Please disable it ONLY if you encounter errors with this feature (eg: you don't have git installed).")
-
 parser.add_argument('-nrd', '--no-required-dependencies', action='store_true', dest='disable_required_dependencies',
                     help="Disable the auto-installation of REQUIRED dependencies.")
 
@@ -130,6 +125,9 @@ parser.add_argument('--alternative-glibc-directory', dest='alt_glibc_dir',
 
 parser.add_argument('--alternative-glibc-version', dest='alt_glibc_version',
                     help="Version of the alternative GLIBC library.")
+
+parser.add_argument('--update-mod-manager', action='store_true', dest='update_mod_manager',
+                    help="Update Factorio-mod-manager. Require GIT. Program will exit after, this flag should be used alone.")
 
 
 def find_version():
@@ -655,8 +653,6 @@ def load_config(args):
         parser.error('Username and/or Token not correctly set. Set them in "config.json" or by passing -u / -t arguments. See README on how to obtain them.')
 
     # Script configuration related
-    glob['disable_mod_manager_update'] = True if args.disable_mod_manager_update is True \
-        else (config['disable_mod_manager_update'] if "disable_mod_manager_update" in config else glob['disable_mod_manager_update'])
     glob['verbose'] = args.verbose if args.verbose is not None \
         else (config['verbose'] if "verbose" in config else glob['verbose'])
     glob['dry_run'] = args.dry_run if args.dry_run is not None else glob['dry_run']
@@ -710,13 +706,14 @@ def main():
 
     args = parser.parse_args()
 
+    # Check if an update (of Factorio-mod-manager) is available
+    if args.update_mod_manager:
+        check_mod_manager_update()
+        exit(0)
+
     if not load_config(args):
         print('Failing miserably...')
         exit(1)
-
-    # Check if an update (of Factorio-mod-manager) is available
-    if glob['disable_mod_manager_update'] is False:
-        check_mod_manager_update()
 
     # List installed mods
     if args.list_mods:

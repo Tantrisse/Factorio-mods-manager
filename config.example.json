@@ -1,6 +1,5 @@
 {
     "verbose": false,
-    "disable_mod_manager_update": true,
     "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",
     "username": "Your Username here. See README",
     "token": "Your Token here. See README",
