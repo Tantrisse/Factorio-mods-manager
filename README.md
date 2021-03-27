@@ -120,7 +120,9 @@ sed "s/3\.\[89\]/3\.\[89\]\* | 4/" -i ../configure
 ```
 You should be able to finish the installation of GLIBC.
 
-After that, you need to add to the `config.json` file of `Factorio-mod-manager` these 2 key : `alternative_glibc_directory` and `alternative_glibc_version`. You cas use the command line parameters `--alternative-glibc-directory` and `--alternative-glibc-version` instead of the `config.json` file.
+After that, you need to add to the `config.json` file of `Factorio-mod-manager` these 2 key : `alternative_glibc_directory` and `alternative_glibc_version`.
+
+You can use the command line parameters `--alternative-glibc-directory` and `--alternative-glibc-version` instead of the `config.json` file.
 
 See [the part about configuration](#configuration) to know what value to pass.
 
@@ -177,6 +179,6 @@ package in the file [LICENSE.md](LICENSE.md).
 ## TODO ##
 - Add crontab example
 - Interactive mod
-- Handle dependencies
-- Handle conflicts
-- ~~Support multiple instances of Factorio (will not do)~~
+- ~~Handle dependencies~~ (done, should update do it too ? Probably)
+- ~~Handle conflicts~~ (kinda done)
+- ~~Support multiple instances of Factorio~~ (will not do)
