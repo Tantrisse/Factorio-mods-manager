@@ -608,7 +608,7 @@ def load_config(args):
     # GLIBC related
     glob['alternative_glibc_directory'] = args.alt_glibc_dir if args.alt_glibc_dir \
         else (config['alternative_glibc_directory'] if "alternative_glibc_directory" in config else glob['alternative_glibc_directory'])
-    glob['alternative_glibc_version'] = args.alt_glibc_dir if args.alt_glibc_version \
+    glob['alternative_glibc_version'] = args.alt_glibc_version if args.alt_glibc_version \
         else (config['alternative_glibc_version'] if "alternative_glibc_version" in config else glob['alternative_glibc_version'])
 
     if glob['alternative_glibc_directory'] is not False:
