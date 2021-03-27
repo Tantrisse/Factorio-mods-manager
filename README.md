@@ -3,6 +3,19 @@ It provides mod management : List / Install / Update / Remove / Enable / Disable
 
 This package is heavily inspired by [Factorio-mod-updater](https://github.com/astevens/factorio-mod-updater/blob/master/factorio-mod-updater) and [Factorio Updater](https://github.com/narc0tiq/factorio-updater) so big thanks to you for your inspiration !
 
+## Coming from [Factorio-Init](https://github.com/Bisa/factorio-init) ? 
+
+If you found this script by using [Factorio-Init](https://github.com/Bisa/factorio-init) and want a quick setup, just follow the installation step and... that's all ! [Factorio-Init](https://github.com/Bisa/factorio-init) will pass any needed configuration to [Factorio-mods-manager](https://github.com/Tantrisse/Factorio-mods-manager) (Path to factorio, Username, Token) !
+
+You can still copy and edit the `config.json` file (see [Configuration](#configuration)) to customise the way the script works.
+
+Keep in mind that if you invoke this script via [Factorio-Init](https://github.com/Bisa/factorio-init) (`./factorio mod install XXXX`) these options are ignored from the `config.json` file as they come from [Factorio-Init](https://github.com/Bisa/factorio-init) :
+- factorio_path
+- username
+- token
+- alternative_glibc_directory
+- alternative_glibc_version
+
 ## Installation ##
 
 This script has been tested (only on Debian) with Python 2.7 and 3.9 using [Requests](http://requests.readthedocs.org/en/latest/) and [Packaging](https://pypi.org/project/packaging).
