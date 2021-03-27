@@ -43,8 +43,8 @@ glob = {
     'remove_required_dependencies': True,
     'remove_optional_dependencies': False,
     'ignore_conflicts_dependencies': False,
-    'alternative_glibc_directory': None,
-    'alternative_glibc_version': None
+    'alternative_glibc_directory': False,
+    'alternative_glibc_version': False
 }
 
 
@@ -147,7 +147,7 @@ def find_version():
     binary_path = os.path.join(glob['factorio_path'], 'bin/x64/factorio')
 
     cmd = []
-    if glob['alternative_glibc_directory'] is not None and glob['alternative_glibc_version'] is not None:
+    if glob['alternative_glibc_directory'] is not False and glob['alternative_glibc_version'] is not False:
         cmd.extend((
             "%s/lib/ld-%s.so" % (glob['alternative_glibc_directory'], glob['alternative_glibc_version']),
             "--library-path",
@@ -611,24 +611,25 @@ def load_config(args):
     glob['alternative_glibc_version'] = args.alt_glibc_dir if args.alt_glibc_version \
         else (config['alternative_glibc_version'] if "alternative_glibc_version" in config else glob['alternative_glibc_version'])
 
-    # We check that if either of glibc params is set, the other is too.
-    if (glob['alternative_glibc_directory'] is None and glob['alternative_glibc_version'] is not None) \
-            or (glob['alternative_glibc_directory'] is not None and glob['alternative_glibc_version'] is None):
-        parser.error(
-            'The directory and version parameters for GLIBC must both have a value or not be specified at all. Got :\n'
-            'alternative-glibc-directory : %s\n'
-            'alternative-glibc-version : %s'
-            % (glob['alternative_glibc_directory'], glob['alternative_glibc_version'])
-        )
-    if glob['alternative_glibc_directory'] is not None and not os.path.isdir(glob['alternative_glibc_directory']):
-        parser.error('The directory "%s" for the alternative GLIBC library points to nothing !' % glob['alternative_glibc_directory'])
+    if glob['alternative_glibc_directory'] is not False:
+        # We check that if either of glibc params is set, the other is too.
+        if (glob['alternative_glibc_directory'] is None and glob['alternative_glibc_version'] is not None) \
+                or (glob['alternative_glibc_directory'] is not None and glob['alternative_glibc_version'] is None):
+            parser.error(
+                'The directory and version parameters for GLIBC must both have a value or not be specified at all. Got :\n'
+                'alternative-glibc-directory : %s\n'
+                'alternative-glibc-version : %s'
+                % (glob['alternative_glibc_directory'], glob['alternative_glibc_version'])
+            )
+        if glob['alternative_glibc_directory'] is not None and not os.path.isdir(glob['alternative_glibc_directory']):
+            parser.error('The directory "%s" for the alternative GLIBC library points to nothing !' % glob['alternative_glibc_directory'])
 
-    glibc_lib_file = "%s/lib/ld-%s.so" % (glob['alternative_glibc_directory'], glob['alternative_glibc_version'])
-    if glob['alternative_glibc_directory'] is not None and not os.path.isfile(glibc_lib_file):
-        parser.error(
-            'Could not find the GLIBC lib file corresponding to version %s ! The file "%s" must exists.' %
-            (glob['alternative_glibc_version'], glibc_lib_file)
-        )
+        glibc_lib_file = "%s/lib/ld-%s.so" % (glob['alternative_glibc_directory'], glob['alternative_glibc_version'])
+        if glob['alternative_glibc_directory'] is not None and not os.path.isfile(glibc_lib_file):
+            parser.error(
+                'Could not find the GLIBC lib file corresponding to version %s ! The file "%s" must exists.' %
+                (glob['alternative_glibc_version'], glibc_lib_file)
+            )
 
     # Service related
     glob['should_reload'] = args.should_reload if args.should_reload is True \

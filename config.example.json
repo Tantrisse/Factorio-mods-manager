@@ -1,15 +1,45 @@
 {
+    "__comment" : "Fields prefixed by __comment are just... comments and don't carry any values, you can safely ignore them",
+
+    "__comment_factorio_path": "Path to Factorio root folder. Example : /opt/factorio",
+    "factorio_path": "",
+
+    "__comment_username": "Your Username here. See README -> Username and token",
+    "username": "",
+
+    "__comment_token": "Your Token here. See README -> Username and token",
+    "token": "",
+
+    "__comment_verbose": "Enable verbose (debug messages) mode. Useful in case of bug or weird behavior.",
     "verbose": false,
-    "factorio_path": "Path to Factorio root folder. Example : /opt/factorio",
-    "username": "Your Username here. See README -> Username and token",
-    "token": "Your Token here. See README",
+
+    "__comment_should_downgrade": "Can be true or false. If true the script will install older version of mods if no compatible version is found for the current Factorio version (see README).",
     "should_downgrade": false,
+
+    "__comment_install_required_dependencies": "Can be true or false. If true, all required dependencies (and any required child dependencies) will be installed.",
     "install_required_dependencies": true,
+
+    "__comment_install_optional_dependencies": "Can be true or false. If true, all optional dependencies will be installed. Note : optional dependencies of required/optional dependencies are never installed automatically.",
     "install_optional_dependencies": false,
+
+    "__comment_remove_required_dependencies": "Can be true or false. If true, all required dependencies (and any required child dependencies) will be removed when a parent is removed.",
     "remove_required_dependencies": true,
+
+    "__comment_remove_optional_dependencies": "Can be true or false. If true, all optional dependencies will be removed when a parent is removed. Note : optional dependencies of required/optional dependencies are never removed automatically.",
+    "remove_optional_dependencies": false,
+
+    "__comment_ignore_conflicts_dependencies": "Can be true or false. If true, any conflict between mods are ignored and mods are installed anyway.",
     "ignore_conflicts_dependencies": false,
+
+    "__comment_should_reload": "Can be true or false. If true, the script will try to reload Factorio via `systemctl restart` and the service_name parameter.",
     "should_reload": false,
-    "service_name": "The name of the service used to start Factorio",
-    "alternative_glibc_directory": "Path to folder where glibc is installed. Eg: /opt/glibc-2.18 (see README -> On the error version `GLIBC_2.18' not found)",
-    "alternative_glibc_version":  "Version of glibc in the 'alternative_glibc_directory'. Eg: 2.18 (see README -> On the error version `GLIBC_2.18' not found)"
+
+    "__comment_service_name": "The name of the service used to start Factorio by systemctl.",
+    "service_name": "",
+
+    "__comment_alternative_glibc_directory": "Can be false if we should use the default one or the path to folder where glibc is installed. Eg: /opt/glibc-2.18 (see README -> On the error version `GLIBC_2.18' not found)",
+    "alternative_glibc_directory": false,
+
+    "__comment_alternative_glibc_version": "Ignored if alternative_glibc_directory is false. Otherwise the version of glibc in the 'alternative_glibc_directory'. Eg: 2.18 (see README -> On the error version `GLIBC_2.18' not found)",
+    "alternative_glibc_version":  false
 }

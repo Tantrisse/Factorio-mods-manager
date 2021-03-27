@@ -26,37 +26,28 @@ easy_install `cat requirements.txt`
 
 ## Configuration ##
 
-Some constant parameters can be put in a config file. These options are 
+Some constant parameters can be put in a config file. The mandatory options which don't have a default values are `factorio_path`, `username` and `token`, these must be set via command line parameters or the config file.
 
-(option | default | definition):
+All other options have default value 
 
-* **verbose** | false | Enable verbose (debug messages) mode.
+These options are 
 
-* **factorio_path** | none *(not set)* | The path to the root folder of your Factorio installation.
-
-* **username** | none *(not set)* | Your username, see [Username and token](#username-and-token).
-
-* **token** | none *(not set)* | Your token, see [Username and token](#username-and-token).
-
-* **should_downgrade** | false | If true, the script will install older version if no compatible version is found for the current Factorio version (see: [this note on mods not updating](#a-note-on-mod-not-installing--updating)).
-
-* **install_required_dependencies** | true | If true, all required dependencies (and any required child dependencies) will be installed.
-
-* **install_optional_dependencies** | false | If true, all optional dependencies will be installed. Note : optional dependencies of required/optional dependencies are never installed automatically.
-
-* **remove_required_dependencies** | true | If true, all required dependencies (and any required child dependencies) will be removed when a parent is removed.
-
-* **ignore_conflicts_dependencies** | false | If true, any conflict between mods are ignored and mods are installed anyway.
-
-* **should_reload** | false | If true, the script will try to reload Factorio via systemctl and the service_name parameter
-
-* **service_name** | none *(not set)* | If Factorio is started via a service and you want to restart it automatically
-
-* **alternative_glibc_directory** | none *(not set)* Absolute path to the side by side GLIBC root, used for systems using older glibc versions (RHEL CentOS and others...)
-
-* **alternative_glibc_version** | none *(not set)* Version of alt GLIBC (2.18 is the minimum required for factorio)
-
-
+Option | Default | Definition
+---: | --- | ---
+**factorio_path** | none | The path to the root folder of your Factorio installation.
+**username** | none | Your username, see [Username and token](#username-and-token).
+**token** | none | Your token, see [Username and token](#username-and-token).
+**verbose** | false | Enable verbose (debug messages) mode.
+**should_downgrade** | false | If true, the script will install older version if no compatible version is found for the current Factorio version (see: [this note on mods not updating](#a-note-on-mod-not-installing--updating)).
+**install_required_dependencies** | true | If true, all required dependencies (and any required child dependencies) will be installed.
+**install_optional_dependencies** | false | If true, all optional dependencies will be installed. Note : optional dependencies of required/optional dependencies are never installed automatically.
+**remove_required_dependencies** | true | If true, all required dependencies (and any required child dependencies) will be removed when a parent is removed.
+**remove_optional_dependencies** | false | If true, all optional dependencies will be removed when a parent is removed. Note : optional dependencies of required/optional dependencies are never removed automatically.
+**ignore_conflicts_dependencies** | false | If true, any conflict between mods are ignored and mods are installed anyway.
+**should_reload** | false | If true, the script will try to reload Factorio via systemctl and the service_name parameter.
+**service_name** | none | If Factorio is started via a service and you want to restart it automatically.
+**alternative_glibc_directory** | false |  Absolute path to the side by side GLIBC root, used for systems using older glibc versions (RHEL CentOS and others...)
+**alternative_glibc_version** | false |  Version of alt GLIBC (2.18 is the minimum required for factorio)
 
 An example file can be found in this repo, just copy `config.example.json` to `config.json` and edit values inside.
 
