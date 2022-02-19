@@ -558,7 +558,9 @@ def download_mod(file_path, download_url):
     payload = {'username': glob['username'], 'token': glob['token']}
     r = requests.get('https://mods.factorio.com' + download_url, params=payload, stream=True)
 
-    if r.headers.get('Content-Type') != 'application/zip':
+    # the Factorio mod portal may serve downloads via a CDN, which 
+    # returns 'application/octet-stream' as the Content-Type
+    if r.headers.get('Content-Type') != 'application/zip' and r.headers.get('Content-Type') != 'application/octet-stream':
         print('Error : Response is not a Zip file !')
         print('It might happen because your Username and/or Token are wrong or deactivated.')
         print('Aborting the mission...')
