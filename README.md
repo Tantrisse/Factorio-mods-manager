@@ -45,22 +45,22 @@ All other options have default value
 
 These options are 
 
-Option | Default | Definition
----: | --- | ---
-**factorio_path** | none | The path to the root folder of your Factorio installation.
-**username** | none | Your username, see [Username and token](#username-and-token).
-**token** | none | Your token, see [Username and token](#username-and-token).
-**verbose** | false | Enable verbose (debug messages) mode.
-**should_downgrade** | false | If true, the script will install older version if no compatible version is found for the current Factorio version (see: [this note on mods not updating](#a-note-on-mod-not-installing--updating)).
-**install_required_dependencies** | true | If true, all required dependencies (and any required child dependencies) will be installed.
-**install_optional_dependencies** | false | If true, all optional dependencies will be installed. Note : optional dependencies of required/optional dependencies are never installed automatically.
-**remove_required_dependencies** | true | If true, all required dependencies (and any required child dependencies) will be removed when a parent is removed.
-**remove_optional_dependencies** | false | If true, all optional dependencies will be removed when a parent is removed. Note : optional dependencies of required/optional dependencies are never removed automatically.
-**ignore_conflicts_dependencies** | false | If true, any conflict between mods are ignored and mods are installed anyway.
-**should_reload** | false | If true, the script will try to reload Factorio via systemctl and the service_name parameter.
-**service_name** | none | If Factorio is started via a service and you want to restart it automatically.
-**alternative_glibc_directory** | false |  Absolute path to the side by side GLIBC root, used for systems using older glibc versions (RHEL CentOS and others...)
-**alternative_glibc_version** | false |  Version of alt GLIBC (2.18 is the minimum required for factorio)
+|                            Option | Default | Definition                                                                                                                                                                                          |
+|----------------------------------:|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|                 **factorio_path** | none    | The path to the root folder of your Factorio installation.                                                                                                                                          |
+|                      **username** | none    | Your username, see [Username and token](#username-and-token).                                                                                                                                       |
+|                         **token** | none    | Your token, see [Username and token](#username-and-token).                                                                                                                                          |
+|                       **verbose** | false   | Enable verbose (debug messages) mode.                                                                                                                                                               |
+|              **should_downgrade** | false   | If true, the script will install older version if no compatible version is found for the current Factorio version (see: [this note on mods not updating](#a-note-on-mod-not-installing--updating)). |
+| **install_required_dependencies** | true    | If true, all required dependencies (and any required child dependencies) will be installed.                                                                                                         |
+| **install_optional_dependencies** | false   | If true, all optional dependencies will be installed. Note : optional dependencies of required/optional dependencies are never installed automatically.                                             |
+|  **remove_required_dependencies** | true    | If true, all required dependencies (and any required child dependencies) will be removed when a parent is removed.                                                                                  |
+|  **remove_optional_dependencies** | false   | If true, all optional dependencies will be removed when a parent is removed. Note : optional dependencies of required/optional dependencies are never removed automatically.                        |
+| **ignore_conflicts_dependencies** | false   | If true, any conflict between mods are ignored and mods are installed anyway.                                                                                                                       |
+|                 **should_reload** | false   | If true, the script will try to reload Factorio via systemctl and the service_name parameter.                                                                                                       |
+|                  **service_name** | none    | If Factorio is started via a service and you want to restart it automatically.                                                                                                                      |
+|   **alternative_glibc_directory** | false   | Absolute path to the side by side GLIBC root, used for systems using older glibc versions (RHEL CentOS and others...)                                                                               |
+|     **alternative_glibc_version** | false   | Version of alt GLIBC (2.18 is the minimum required for factorio)                                                                                                                                    |
 
 An example file can be found in this repo, just copy `config.example.json` to `config.json` and edit values inside.
 
@@ -68,7 +68,7 @@ Keep in mind that any corresponding command line argument will **override** thes
 
 ## Usage ##
 
-There is too much possibilities to cover them all here ! You can get a summary of all commands and flags by simply going in the folder where you cloned this repo, and run 
+There is too many possibilities to cover them all here ! You can get a summary of all commands and flags by simply going in the folder where you cloned this repo, and run 
 
 ```shell script
 python mods_manager.py --help
@@ -82,8 +82,8 @@ Here we want to :
 
 * Install "bobvehicleequipment"
 * Enable "bobplates" and "bobgreenhouse" (assuming they are already installed)
-* Disable "IndustrialRevolution" because of incompatibility issues with bob's mods
-* Finally we update all mods
+* Disable "IndustrialRevolution" because of incompatibility issues with Bob's mods
+* Finally, we update all mods
 
 All this can be done in one command :
 ```shell script
@@ -127,7 +127,7 @@ The correct mod name to use is the last part of the URL : `bobplates`.
 
 If you encounter an error about **GLIBC 2.18** not found, you can install it using [this thread on the factorio forum by **millisa**](https://forums.factorio.com/viewtopic.php?t=54654#p324493).
 
-When following the aforementioned guide, if you stumble across the error `These critical programs are missing or too old: make` when doing `../configure --prefix='/opt/glibc-2.18'` and your make version is up to date, just run this command and try again :
+When following the aforementioned guide, if you stumble across the error `These critical programs are missing or too old: make` when doing `../configure --prefix='/opt/glibc-2.18'` and your make version is up-to-date, just run this command and try again :
 ```
 sed "s/3\.\[89\]/3\.\[89\]\* | 4/" -i ../configure
 ```
@@ -141,22 +141,22 @@ See [the part about configuration](#configuration) to know what value to pass.
 
 ## A note on mod not installing / updating
 
-When Factorio is updated to a newer version, it sometimes don't break / change anything for some mods.
+When Factorio is updated to a newer version, it sometimes doesn't break / change anything for some mods.
 
-This create a situation where (for example) there is no version listed of FNEI for Factorio 1.0.0
+This creates a situation where (for example) there is no version listed of FNEI for Factorio 1.0.0
 ([api response](https://mods.factorio.com/api/mods/FNEI)) because the latest mod version for Factorio 0.18 works fine.
 
 The only way to install this mod when using Factorio 1.0.0 is by using the `--downgrad` flag.
 The script will now install / update the mod using the latest release available for Factorio < 1.0.0 (here Factorio 0.18).
 
-Beware that it don't check if the mod is compatible and should only by used if you're sure that all your mods
+Beware that it don't check if the mod is compatible and should only be used if you're sure that all your mods
 are compatible with your Factorio version.
 
 ## About dependencies
 
 ### Dependencies when installing
 
-By default the script will install any **required** dependencies. If a dependency has a required dependency, the script will install it as long as there is required dependencies.
+By default, the script will install any **required** dependencies. If a dependency has a required dependency, the script will install it as long as there is required dependencies.
 
 This behavior can be disabled (however not recommended) by passing the `-nrd` or `--no-required-dependencies` flag.
 
@@ -165,7 +165,7 @@ Note that only optional dependencies of mod you are currently installing are ins
 
 ### Dependencies when removing
 
-When removing a mod, any **required** dependencies by this mods and their children will be deleted.
+When removing a mod, any **required** dependencies by this mod and their children will be deleted.
 
 This behavior can be disabled by passing the `-nrrd` or `--no-remove-required-dependencies` flag.
 
