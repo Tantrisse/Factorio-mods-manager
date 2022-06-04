@@ -3,6 +3,24 @@ It provides mod management : List / Install / Update / Remove / Enable / Disable
 
 This package is heavily inspired by [Factorio-mod-updater](https://github.com/astevens/factorio-mod-updater/blob/master/factorio-mod-updater) and [Factorio Updater](https://github.com/narc0tiq/factorio-updater) so big thanks to you for your inspiration !
 
+# Table Of Content
+* [Coming from Factorio-Init ?](#coming-from-factorio-inithttpsgithubcombisafactorio-init-)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Usage](#usage)
+  * [A complex example](#a-complex-example)
+* [Username and token](#username-and-token)
+* [How to find the correct mod name](#how-to-find-the-correct-mod-name)
+  * [A note on mod names containing spaces](#a-note-on-mod-names-containing-spaces)
+* [On the error "version `GLIBC_2.18' not found"](#on-the-error-version-glibc_218-not-found)
+* [A note on mod not installing / updating](#a-note-on-mod-not-installing--updating)
+* [About dependencies](#about-dependencies)
+  * [Dependencies when installing](#dependencies-when-installing)
+  * [Dependencies when removing](#dependencies-when-removing)
+  * [Conflicts](#conflicts)
+* [License](#license)
+* [TODO](#todo)
+
 ## Coming from [Factorio-Init](https://github.com/Bisa/factorio-init) ? 
 
 If you found this script by using [Factorio-Init](https://github.com/Bisa/factorio-init) and want a quick setup, just follow the installation step and... that's all ! [Factorio-Init](https://github.com/Bisa/factorio-init) will pass any needed configuration to [Factorio-mods-manager](https://github.com/Tantrisse/Factorio-mods-manager) (Path to factorio, Username, Token) !
@@ -16,7 +34,7 @@ Keep in mind that if you invoke this script via [Factorio-Init](https://github.c
 - alternative_glibc_directory
 - alternative_glibc_version
 
-## Installation ##
+## Installation
 
 This script has been tested (only on Debian) with Python 2.7 and 3.9 using [Requests](http://requests.readthedocs.org/en/latest/) and [Packaging](https://pypi.org/project/packaging).
 
@@ -37,7 +55,7 @@ If you can only use `easy_install` and not `pip`, try doing
 easy_install `cat requirements.txt`
 ```
 
-## Configuration ##
+## Configuration
 
 Some constant parameters can be put in a config file. The mandatory options which don't have a default values are `factorio_path`, `username` and `token`, these must be set via command line parameters or the config file.
 
@@ -66,9 +84,14 @@ An example file can be found in this repo, just copy `config.example.json` to `c
 
 Keep in mind that any corresponding command line argument will **override** these in config file.
 
-## Usage ##
+## Usage
 
-There is too many possibilities to cover them all here ! You can get a summary of all commands and flags by simply going in the folder where you cloned this repo, and run 
+There is too many possibilities to cover them all here !
+
+But in short, you can install, uninstall, enable or disable mods.
+All of this with an automatic management of dependencies 
+
+You can get a list of all commands and flags by simply going in the folder where you cloned this repo, and run 
 
 ```shell script
 python mods_manager.py --help
@@ -76,7 +99,7 @@ python mods_manager.py --help
 
 --------
 
-### A complex example :
+### A complex example
 
 Here we want to :
 
@@ -104,7 +127,7 @@ Automatic reload has been disabled, please restart Factorio by yourself.
 Finished !
 ```
 
-## Username and token ##
+## Username and token
 
 The keen-eyed will have noticed the options for `--user` and `--token`. These
 allow you to supply a username and token normally used by the Factorio (like the in-game updater and authenticated multiplayer). Having them will
@@ -123,6 +146,8 @@ Once you find an interesting mod, for example `Bob's Metals, Chemicals and Inter
 open the mod portal page, here https://mods.factorio.com/mod/bobplates
 
 The correct mod name to use is the last part of the URL after `/mod/` : `bobplates`.
+
+### A note on mod names containing spaces
 
 If the mod you are looking for contain spaces in its name, like [Flow Control](https://mods.factorio.com/mod/Flow%20Control),
 don't forget to either :
@@ -188,7 +213,7 @@ If a conflict is found, the installation stop.
 
 To install anyway, you may use the flag `-icd` or `--ignore-conflicts-dependencies` to bypass this restriction (however really not recommended).
 
-## License ##
+## License
 
 The source of **Factorio Mod Manager** is Copyright 2019 Tristan "Tantrisse"
 Chanove. It is licensed under the [MIT license][mit], available in this
@@ -197,7 +222,7 @@ package in the file [LICENSE.md](LICENSE.md).
 [mit]: http://opensource.org/licenses/mit-license.html
 
 
-## TODO ##
+## TODO
 - Add crontab example
 - Interactive mod
 - ~~Handle dependencies~~ (done, should update do it too ? Probably)
