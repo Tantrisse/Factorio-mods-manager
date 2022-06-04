@@ -1,7 +1,8 @@
-certifi==2020.12.5
+certifi==2022.5.18.1
 chardet==4.0.0
-idna==2.10
-packaging==20.9
-pyparsing==2.4.7
-requests==2.25.1
-urllib3==1.26.5
+charset-normalizer==2.0.12
+idna==3.3
+packaging==21.3
+pyparsing==3.0.9
+requests==2.27.1
+urllib3==1.26.9
