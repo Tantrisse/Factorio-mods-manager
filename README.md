@@ -123,6 +123,10 @@ Once you find an interesting mod, for example `Bob's Metals, Chemicals and Inter
 
 The correct mod name to use is the last part of the URL : `bobplates`.
 
+Note that some mod URL's may appear to contain spaces. In this case, substitute the space with a `%20`
+
+Example: `https://mods.factorio.com/mod/Flow Control` turns into `Flow%20Control`
+
 ## On the error "version `GLIBC_2.18' not found"
 
 If you encounter an error about **GLIBC 2.18** not found, you can install it using [this thread on the factorio forum by **millisa**](https://forums.factorio.com/viewtopic.php?t=54654#p324493).
