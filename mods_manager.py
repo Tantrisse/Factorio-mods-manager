@@ -302,12 +302,12 @@ def get_mod_infos(mod, min_mod_version='latest'):
 #   "?"         = optional (can be installed)
 #   "(?)"       = hidden optional, used to change load order (should not be installed)
 #   "!"         = conflict (must NOT be installed)
-#   "(!)"       = conflict, should not exists but I swear I saw it one time (must NOT be installed)
+#   "(!)"       = conflict, should not exist, but I swear I saw it one time (must NOT be installed)
 def parse_dependencies(dependencies):
     filtered_dependencies = {"required": [], "optional": [], "conflict": []}
 
     for mod in dependencies:
-        # We clean the the mod name
+        # We clean the mod name
         mod = "".join(mod.split())
         # Split the version comparator. TODO : capture the comparator for later use
         mod = re.split('<|<=|=|>=|>', mod)
@@ -353,7 +353,7 @@ def mod_has_conflicts(conflict_list):
 
 
 def check_file_and_sha(file_path, sha1):
-    # We assume that a file with the same name and SHA1 is up to date
+    # We assume that a file with the same name and SHA1 is up-to-date
     if os.path.exists(file_path) and sha1 == get_file_sha1(file_path):
         print('A file already exists at the path "%s" and is identical (same SHA1), skipping...' % file_path)
         return True
@@ -443,7 +443,7 @@ def install_mod(mod_name, min_mod_version='latest', install_optional_dependencie
     if install_optional_dependencies is True and glob['install_optional_dependencies'] is True:
         install_dependencies(mod_name, dependencies, "optional")
 
-    # Add the mod to the global list of mods which will be wrote to "mod-list.json" later
+    # Add the mod to the global list of mods which will be written to "mod-list.json" later
     add_to_glob_mod_list(mod)
 
     # Check if file already exists and have the same sha1
@@ -529,7 +529,7 @@ def remove_mod(mod_name, remove_optional_dependencies=True):
         return False
 
     # We remove the mod from the global list of installed mods,
-    # 'mod-list.json' file will be wrote later
+    # 'mod-list.json' file will be written later
     remove_to_glob_mod_list(mod)
 
     # Save globally that a reload of Factorio is needed in the end.
@@ -544,7 +544,7 @@ def remove_dependencies(parent_name, dependencies, dependencies_type):
             dependencies_type,
             parent_name
         ))
-        # Remove the dependency but NOT it's own optional dependencies
+        # Remove the dependency but NOT its own optional dependencies.
         # Optional dependencies of a dependency should be removed by doing 'mod_manager.py -r $mod_name$ -rod'
         # where $mod_name$ is name of the optional dependency
         remove_mod(dependency[0], False)
