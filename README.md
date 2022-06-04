@@ -4,7 +4,7 @@ It provides mod management : List / Install / Update / Remove / Enable / Disable
 This package is heavily inspired by [Factorio-mod-updater](https://github.com/astevens/factorio-mod-updater/blob/master/factorio-mod-updater) and [Factorio Updater](https://github.com/narc0tiq/factorio-updater) so big thanks to you for your inspiration !
 
 # Table Of Content
-* [Coming from Factorio-Init ?](#coming-from-factorio-inithttpsgithubcombisafactorio-init-)
+* [Coming from Factorio-Init ?](#coming-from-factorio-init-)
 * [Installation](#installation)
 * [Configuration](#configuration)
 * [Usage](#usage)
