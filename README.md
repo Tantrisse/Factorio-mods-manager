@@ -117,11 +117,19 @@ First, how to get them:
 ## How to find the correct mod name
 
 In order to use this script, you have to find the correct mod name, not the "friendly" one.
-You can do it directly from mod portal !
+You can do it directly from [mod portal](https://mods.factorio.com/) !
 
-Once you find an interesting mod, for example `Bob's Metals, Chemicals and Intermediates`, open the mod portal page, here https://mods.factorio.com/mod/bobplates
+Once you find an interesting mod, for example `Bob's Metals, Chemicals and Intermediates`,
+open the mod portal page, here https://mods.factorio.com/mod/bobplates
 
-The correct mod name to use is the last part of the URL : `bobplates`.
+The correct mod name to use is the last part of the URL after `/mod/` : `bobplates`.
+
+If the mod you are looking for contain spaces in its name, like [Flow Control](https://mods.factorio.com/mod/Flow%20Control),
+don't forget to either :
+- [url encode](https://www.urlencoder.io/) the mode name, `Flow Control` become `Flow%20Control`
+- add quotes before and after the mod name to pass it as a single string
+  - `python mods_manager.py -i "Flow Control"`
+  - You can do it too if you use [Factorio-Init](https://github.com/Bisa/factorio-init) `factorio mod install "Flow Control"`
 
 ## On the error "version `GLIBC_2.18' not found"
 
