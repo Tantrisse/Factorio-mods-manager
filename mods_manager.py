@@ -191,7 +191,7 @@ def read_mods_list(remove_base=True):
     # Remove the 'base' mod
     installed_mods_list = copy.deepcopy(glob_mod_list)
     if remove_base:
-        installed_mods_list[:] = [d for d in glob_mod_list if d.get('name') != 'base']
+        installed_mods_list[:] = [d for d in glob_mod_list if d.get('name') != 'base' and d.get('name') != 'elevated-rails' and d.get('name') != 'quality' and d.get('name') != 'space-age']
 
     return installed_mods_list
 
